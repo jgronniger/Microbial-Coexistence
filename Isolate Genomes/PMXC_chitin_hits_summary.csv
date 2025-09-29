@@ -1,0 +1,107 @@
+﻿File,Strain,Product,Count,Gene,Family
+4,M03D5GC21,Xylanase/chitin deacetylase,1,Chitin Deacetylase,CE4
+4,M03D5GC21,Xylanase/chitin deacetylase protein,1,Chitin Deacetylase,CE4
+14,M09D5GC07,Peptidoglycan/xylan/chitin deacetylase (PgdA/CDA1 family),1,Chitin Deacetylase,CE4
+17,M10D5GC03,chitin disaccharide deacetylase,1,Chitin Deacetylase,CE4
+24,M03D5GC05,Peptidoglycan/xylan/chitin deacetylase (PgdA/CDA1 family),2,Chitin Deacetylase,CE4
+24,M03D5GC05,"Peptidoglycan/xylan/chitin deacetylase, PgdA/CDA1 family",1,Chitin Deacetylase,CE4
+1,M03D5C18,N-acetylglucosamine-6-phosphate deacetylase,1,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+2,M03D5GC02,N-acetylglucosamine-6-phosphate deacetylase,2,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+4,M03D5GC21,N-acetylglucosamine-6-phosphate deacetylase,1,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+5,M03D6GC30,N-acetylglucosamine-6-phosphate deacetylase,2,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+8,M05D5GC01,N-acetylglucosamine-6-phosphate deacetylase,2,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+9,M07D5C33,N-acetylglucosamine-6-phosphate deacetylase,1,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+10,M07D5GC13,N-acetylglucosamine-6-phosphate deacetylase,1,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+11,M07D5GC17,N-acetylglucosamine-6-phosphate deacetylase,2,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+12,M07D6GC08,N-acetylglucosamine-6-phosphate deacetylase,2,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+13,M09D5C28,N-acetylglucosamine-6-phosphate deacetylase,1,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+14,M09D5GC07,N-acetylglucosamine-6-phosphate deacetylase,1,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+16,M10D5C22,N-acetylglucosamine-6-phosphate deacetylase,2,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+17,M10D5GC03,N-acetylglucosamine-6-phosphate deacetylase,2,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+18,M10D5GC09,N-acetylglucosamine-6-phosphate deacetylase,2,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+21,M10D6C16,N-acetylglucosamine-6-phosphate deacetylase,2,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+24,M03D5GC05,N-acetylglucosamine-6-phosphate deacetylase,1,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+25,M07D5C27,N-acetylglucosamine-6-phosphate deacetylase,2,N-acetylglucosamine-6-phosphate deacetylase,EC3.5.1.25
+1,M03D5C18,glycoside hydrolase family 18,2,Chitinase,GH18
+1,M03D5C18,glycoside hydrolase family 18 protein,1,Chitinase,GH18
+1,M03D5C18,glycosyl hydrolase family 18 protein,2,Chitinase,GH18
+1,M03D5C18,Glycosyl hydrolases family 18,1,Chitinase,GH18
+2,M03D5GC02,glycosyl hydrolase family 18 protein,1,Chitinase,GH18
+3,M03D5GC15,Glycosyl hydrolase family 18,1,Chitinase,GH18
+3,M03D5GC15,glycosyl hydrolase family 18 protein,1,Chitinase,GH18
+11,M07D5GC17,Glycosyl hydrolase family 18 (Putative chitinase),1,Chitinase,GH18
+11,M07D5GC17,glycosyl hydrolase family 18 protein,1,Chitinase,GH18
+12,M07D6GC08,glycoside hydrolase family 18,1,Chitinase,GH18
+13,M09D5C28,glycoside hydrolase family 18 protein,1,Chitinase,GH18
+13,M09D5C28,glycosyl hydrolase family 18 protein,1,Chitinase,GH18
+16,M10D5C22,glycosyl hydrolase family 18 protein,3,Chitinase,GH18
+26,M09D6C03,glycosyl hydrolase family 18 protein,1,Chitinase,GH18
+1,M03D5C18,chitinase,1,Chitinase,GH18|GH19
+9,M07D5C33,chitinase,1,Chitinase,GH18|GH19
+11,M07D5GC17,chitinase,1,Chitinase,GH18|GH19
+17,M10D5GC03,chitinase,1,Chitinase,GH18|GH19
+18,M10D5GC09,chitinase,1,Chitinase,GH18|GH19
+22,M10D6GC05,chitinase,1,Chitinase,GH18|GH19
+24,M03D5GC05,chitinase,2,Chitinase,GH18|GH19
+24,M03D5GC05,Putative chitinase,1,Chitinase,GH18|GH19
+2,M03D5GC02,glycoside hydrolase family 19 protein,1,Chitinase,GH19
+10,M07D5GC13,glycoside hydrolase family 19 protein,1,Chitinase,GH19
+14,M09D5GC07,glycoside hydrolase family 19 protein,1,Chitinase,GH19
+18,M10D5GC09,Glycoside hydrolase family 19 protein,1,Chitinase,GH19
+21,M10D6C16,glycoside hydrolase family 19 protein,1,Chitinase,GH19
+1,M03D5C18,beta-N-acetylhexosaminidase,4,Beta-N-acetylglucosaminidase,GH20
+2,M03D5GC02,beta-N-acetylhexosaminidase,2,Beta-N-acetylglucosaminidase,GH20
+3,M03D5GC15,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+4,M03D5GC21,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+5,M03D6GC30,beta-N-acetylhexosaminidase,3,Beta-N-acetylglucosaminidase,GH20
+6,M05D5C13,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+7,M05D5C33,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+8,M05D5GC01,beta-N-acetylhexosaminidase,2,Beta-N-acetylglucosaminidase,GH20
+9,M07D5C33,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+10,M07D5GC13,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+11,M07D5GC17,Beta-N-acetylglucosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+11,M07D5GC17,Beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+11,M07D5GC17,beta-N-acetylhexosaminidase,9,Beta-N-acetylglucosaminidase,GH20
+11,M07D5GC17,Endo-beta-N-acetylglucosaminidase F3,1,Beta-N-acetylglucosaminidase,GH20
+12,M07D6GC08,Beta-N-acetylglucosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+12,M07D6GC08,beta-N-acetylhexosaminidase,10,Beta-N-acetylglucosaminidase,GH20
+13,M09D5C28,beta-N-acetylhexosaminidase,2,Beta-N-acetylglucosaminidase,GH20
+14,M09D5GC07,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+15,M10D5C16,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+16,M10D5C22,beta-N-acetylhexosaminidase,5,Beta-N-acetylglucosaminidase,GH20
+17,M10D5GC03,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+18,M10D5GC09,beta-N-acetylhexosaminidase,4,Beta-N-acetylglucosaminidase,GH20
+19,M10D5GC11,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+20,M10D5GC19,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+21,M10D6C16,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+22,M10D6GC05,beta-N-acetylhexosaminidase,5,Beta-N-acetylglucosaminidase,GH20
+22,M10D6GC05,Endo-beta-N-acetylglucosaminidase F1,1,Beta-N-acetylglucosaminidase,GH20
+22,M10D6GC05,Endo-beta-N-acetylglucosaminidase F2,1,Beta-N-acetylglucosaminidase,GH20
+22,M10D6GC05,endo-beta-N-acetylglucosaminidase F3,1,Beta-N-acetylglucosaminidase,GH20
+23,M07D6C12,beta-N-acetylhexosaminidase,3,Beta-N-acetylglucosaminidase,GH20
+24,M03D5GC05,beta-N-acetylhexosaminidase,10,Beta-N-acetylglucosaminidase,GH20
+24,M03D5GC05,endo-beta-N-acetylglucosaminidase H,1,Beta-N-acetylglucosaminidase,GH20
+24,M03D5GC05,Glycosyl hydrolase family 20,1,Beta-N-acetylglucosaminidase,GH20
+25,M07D5C27,Beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+25,M07D5C27,beta-N-acetylhexosaminidase,3,Beta-N-acetylglucosaminidase,GH20
+26,M09D6C03,beta-N-acetylhexosaminidase,1,Beta-N-acetylglucosaminidase,GH20
+2,M03D5GC02,glycoside hydrolase family 5 protein,1,Chitin Deacetylase,GH5
+5,M03D6GC30,glycoside hydrolase family 5 protein,2,Chitin Deacetylase,GH5
+8,M05D5GC01,glycoside hydrolase family 5 protein,1,Chitin Deacetylase,GH5
+11,M07D5GC17,Glycoside hydrolase family 5 protein,1,Chitin Deacetylase,GH5
+12,M07D6GC08,glycoside hydrolase family 5 protein,1,Chitin Deacetylase,GH5
+12,M07D6GC08,Glycosyl hydrolase family 5,1,Chitin Deacetylase,GH5
+16,M10D5C22,Cellulase (Glycosyl hydrolase family 5),1,Chitin Deacetylase,GH5
+16,M10D5C22,glycoside hydrolase family 5 protein,1,Chitin Deacetylase,GH5
+21,M10D6C16,Glycosyl hydrolase family 5,1,Chitin Deacetylase,GH5
+24,M03D5GC05,Cellulase (Glycosyl hydrolase family 5),1,Chitin Deacetylase,GH5
+4,M03D5GC21,Glycosyl transferase family 8,1,Chitin Deacetylase,GH8
+4,M03D5GC21,glycosyltransferase family 8 protein,1,Chitin Deacetylase,GH8
+12,M07D6GC08,Glycosyl transferase family 8,1,Chitin Deacetylase,GH8
+17,M10D5GC03,Glycosyltransferase family 8 protein,1,Chitin Deacetylase,GH8
+1,M03D5C18,family 20 glycosylhydrolase,2,Alpha-N-acetylglucosaminidase,GH89
+2,M03D5GC02,family 20 glycosylhydrolase,2,Alpha-N-acetylglucosaminidase,GH89
+12,M07D6GC08,Alpha-N-acetylglucosaminidase,1,Alpha-N-acetylglucosaminidase,GH89
+12,M07D6GC08,family 20 glycosylhydrolase,3,Alpha-N-acetylglucosaminidase,GH89
+13,M09D5C28,family 20 glycosylhydrolase,1,Alpha-N-acetylglucosaminidase,GH89
+16,M10D5C22,family 20 glycosylhydrolase,2,Alpha-N-acetylglucosaminidase,GH89
