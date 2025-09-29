@@ -1,0 +1,52 @@
+no change     /bsuhome/jessicagronniger/miniforge3/condabin/conda
+no change     /bsuhome/jessicagronniger/miniforge3/bin/conda
+no change     /bsuhome/jessicagronniger/miniforge3/bin/conda-env
+no change     /bsuhome/jessicagronniger/miniforge3/bin/activate
+no change     /bsuhome/jessicagronniger/miniforge3/bin/deactivate
+no change     /bsuhome/jessicagronniger/miniforge3/etc/profile.d/conda.sh
+no change     /bsuhome/jessicagronniger/miniforge3/etc/fish/conf.d/conda.fish
+no change     /bsuhome/jessicagronniger/miniforge3/shell/condabin/Conda.psm1
+no change     /bsuhome/jessicagronniger/miniforge3/shell/condabin/conda-hook.ps1
+no change     /bsuhome/jessicagronniger/miniforge3/lib/python3.10/site-packages/xontrib/conda.xsh
+no change     /bsuhome/jessicagronniger/miniforge3/etc/profile.d/conda.csh
+no change     /bsuhome/jessicagronniger/.bashrc
+No action taken.
+
+CondaError: Run 'conda init' before 'conda activate'
+
+Imported /bsuhome/jessicagronniger/scratch/PMXC6_Amplicon/PMXC6_manifest_RS.txt as PairedEndFastqManifestPhred33V2 to paired-end-demux.qza
+Saved Visualization to: paired-end-demux.qzv
+R version 4.0.3 (2020-10-10) 
+Loading required package: Rcpp
+DADA2: 1.18.0 / Rcpp: 1.0.6 / RcppParallel: 5.1.2 
+1) Filtering ...........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+2) Learning Error Rates
+161555619 total bases in 1233249 reads from 7 samples will be used for learning the error rates.
+160322370 total bases in 1233249 reads from 7 samples will be used for learning the error rates.
+3) Denoise samples ...........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+...........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+4) Remove chimeras (method = consensus)
+6) Write output
+Running external command line application(s). This may print messages to stdout and/or stderr.
+The command(s) being run are below. These commands cannot be manually re-run as they will depend on temporary files that no longer exist.
+
+Command: run_dada_paired.R /tmp/tmpbfacwti9/forward /tmp/tmpbfacwti9/reverse /tmp/tmpbfacwti9/output.tsv.biom /tmp/tmpbfacwti9/track.tsv /tmp/tmpbfacwti9/filt_f /tmp/tmpbfacwti9/filt_r 150 150 19 20 2.0 2.0 2 8 independent consensus 1.0 20 1000000
+
+Saved FeatureTable[Frequency] to: table-dada2.qza
+Saved FeatureData[Sequence] to: rep-seqs-dada2.qza
+Saved SampleData[DADA2Stats] to: stats-dada2.qza
+Saved Visualization to: stats-dada2.qzv
+Exported table-dada2.qza as BIOMV210DirFmt to directory exported-files
+Exported rep-seqs-dada2.qza as DNASequencesDirectoryFormat to directory exported-files
+Saved Visualization to: table-dada2.qzv
+Saved Visualization to: rep-seqs-dada2.qzv
+Imported Fasta_PMXC6_16S.fasta as DNASequencesDirectoryFormat to ref-sequences.qza
+Imported PMXC6_ref_taxonomy.txt as HeaderlessTSVTaxonomyFormat to ref-taxonomy.qza
+Saved TaxonomicClassifier to: classifier.qza
+Saved FeatureData[Taxonomy] to: taxonomy.qza
+Saved Visualization to: taxonomy.qzv
+Saved FeatureTable[Frequency] to: rarefied-table.qza
+Saved Visualization to: taxa-bar-plots-dada2.qzv
+Exported rarefied-table.qza as BIOMV210DirFmt to directory exported-feature-table
+Exported taxonomy.qza as TSVTaxonomyDirectoryFormat to directory taxonomy_exported
+Exported table-dada2.qza as BIOMV210DirFmt to directory feature_table_exported
