@@ -62,7 +62,7 @@ qiime tools export \
 qiime feature-table summarize \
   --i-table table-dada2.qza \
   --o-visualization table-dada2.qzv \
-  --m-sample-metadata-file PMXC6_manifest_RS.txt 
+  --m-sample-metadata-file CR.R2A_manifest.txt 
 
 # list and visualize all representative ASV sequences
 
@@ -83,7 +83,7 @@ qiime tools import \
 
 qiime tools import \
   --type 'FeatureData[Taxonomy]' \
-  --input-path PMXC6_ref_taxonomy.txt \
+  --input-path CR.R2A_ref_taxonomy_names.txt \
   --output-path ref-taxonomy.qza \
   --input-format HeaderlessTSVTaxonomyFormat
 
@@ -119,7 +119,7 @@ qiime feature-table rarefy \
 qiime taxa barplot \
   --i-table rarefied-table.qza \
   --i-taxonomy taxonomy.qza \
-  --m-metadata-file PMXC6_manifest_RS.txt  \
+  --m-metadata-file CR.R2A_manifest.txt  \
   --o-visualization taxa-bar-plots-dada2.qzv
 
 # export the rarefied feature table to BIOM format
