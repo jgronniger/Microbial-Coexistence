@@ -1,0 +1,107 @@
+conda activate qiime2-2021.4
+
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path /bsuhome/jessicagronniger/scratch/6625_Illumina/PMXC7_manifest.txt \
+  --output-path paired-end-demux.qza \
+  --input-format PairedEndFastqManifestPhred33V2
+
+qiime demux summarize \
+  --i-data paired-end-demux.qza \
+  --o-visualization paired-end-demux.qzv
+
+qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs paired-end-demux.qza \
+  --p-trim-left-f 19 \
+  --p-trim-left-r 20 \
+  --p-trunc-len-f 150 \
+  --p-trunc-len-r 150 \
+  --p-n-threads 20 \
+  --p-min-overlap 8 \
+  --o-representative-sequences rep-seqs-dada2.qza \
+  --o-table table-dada2.qza \
+  --o-denoising-stats stats-dada2.qza --verbose
+
+qiime metadata tabulate \
+  --m-input-file stats-dada2.qza \
+  --o-visualization stats-dada2.qzv
+
+qiime tools export \
+  --input-path table-dada2.qza \
+  --output-path exported-files
+
+qiime tools export \
+  --input-path rep-seqs-dada2.qza \
+  --output-path exported-files
+
+### Feature table summaries
+
+qiime feature-table summarize \
+  --i-table table-dada2.qza \
+  --o-visualization table-dada2.qzv \
+  --m-sample-metadata-file PMXC7_manifest.txt 
+
+qiime feature-table tabulate-seqs \
+  --i-data rep-seqs-dada2.qza \
+  --o-visualization rep-seqs-dada2.qzv
+
+### Import into qiime2
+qiime tools import \
+  --type 'FeatureData[Sequence]' \
+  --input-path Fasta_PMXC7_16S.fasta \
+  --output-path ref-sequences.qza
+
+qiime tools import \
+  --type 'FeatureData[Taxonomy]' \
+  --input-path PMXC7_ref_taxonomy.txt \
+  --output-path ref-taxonomy.qza \
+  --input-format HeaderlessTSVTaxonomyFormat
+
+qiime feature-classifier fit-classifier-naive-bayes \
+  --i-reference-reads ref-sequences.qza \
+  --i-reference-taxonomy ref-taxonomy.qza \
+  --o-classifier classifier.qza
+
+qiime feature-classifier classify-sklearn \
+  --i-classifier classifier.qza \
+  --i-reads rep-seqs-dada2.qza \
+  --o-classification taxonomy.qza
+
+qiime metadata tabulate \
+  --m-input-file taxonomy.qza \
+  --o-visualization taxonomy.qzv
+
+qiime feature-table rarefy \
+  --i-table table-dada2.qza \
+  --p-sampling-depth 17841 \
+  --o-rarefied-table rarefied-table.qza
+  
+qiime taxa barplot \
+  --i-table rarefied-table.qza \
+  --i-taxonomy taxonomy.qza \
+  --m-metadata-file PMXC7_manifest.txt  \
+  --o-visualization taxa-bar-plots-dada2.qzv
+
+qiime tools export \
+  --input-path rarefied-table.qza \
+  --output-path exported-feature-table
+
+biom convert \
+  -i exported-feature-table/feature-table.biom \
+  -o ASV_counts.tsv \
+  --to-tsv
+
+qiime tools export \
+  --input-path taxonomy.qza \
+  --output-path taxonomy_exported
+
+qiime tools export \
+  --input-path table-dada2.qza \
+  --output-path feature_table_exported
+
+biom convert \
+  -i feature_table_exported/feature-table.biom \
+  -o feature_table.tsv \
+  --to-tsv
+
+awk 'NR==1{print $0"\tTaxonomy"} NR>1{getline tax < "taxonomy_exported/taxonomy.tsv"; print $0"\t"tax}' ASV_counts.tsv > rarefied_asv_table_with_taxonomy.txt
