@@ -1,0 +1,1166 @@
+---
+title: "MXC_MainFigures"
+author: "Jessica Gronniger"
+date: "2025-09-29"
+output: html_document
+---
+
+#Load required packages
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+library(devtools)
+library(RColorBrewer)
+library(tidyr)
+library(dplyr)
+library(reshape2)
+library("vegan")
+library("ggplot2")
+library("gridExtra")
+library(ggrepel)
+library(grid)
+library(data.table)
+library(plyr)
+library(ggpubr)
+library(hillR)
+library(lmerTest)
+library(tidyverse)
+library(cowplot)
+```
+
+#color scheme for bar plots (i.e. colors for each isolate)
+```{r}
+
+col28 <- c(
+  "S9"        = "dodgerblue2",      
+  "S33"       = "limegreen",           
+  "S8"        = "saddlebrown",       
+  "S120"      = "lightblue1",        
+  "S14"       = "navy",              
+  "S29"       = "mediumorchid1",     
+  "S30"       = "darkorchid4",       
+  "S21"       = "hotpink",           
+  "S11"       = "darkcyan",          
+  "S5"        = "paleturquoise1",    
+  "S16"       = "skyblue3",          
+  "S7"        = "deeppink4",         
+  "S32"       = "mediumvioletred",   
+  "S6"        = "plum3",             
+  "S22"       = "lightpink2",        
+  "S491"        = "purple4",          
+  "S31"       = "palegreen2",        
+  "S27"       = "darkgreen",         
+  "S10"       = "mediumaquamarine",         
+  "S391"        = "mistyrose2",        
+  "S34"       = "forestgreen",       
+  "S263"        = "thistle1",      
+  "S17"       = "goldenrod3",       
+  "S28"       = "lightgoldenrod1",  
+  "S2"        = "darkorange3",     
+  "S19"       = "salmon",            
+  "Unassigned"  = "gray70",            
+  "Rare"        = "gray30"             
+)
+
+
+```
+
+#Color scheme for treatments
+```{r}
+
+# Assign a unique color for each sample (grouped based on whether it contains "CR", "M9" or "R2A")
+color <- c("SM9RTNB" = "#FFC1E3",
+           "SM9RTB" = "#CC3399", 
+           "SM9VTNB" = "#FF3399",
+           "SM9VTB" = "#800040",
+           
+           "NSM9RTNB" = "#D1B3FF",
+           "NSM9RTB" = "#9966CC",
+           "NSM9VTNB" = "#4B0082",
+           "NSM9VTB" = "#2E003E",
+           
+          "SR2ARTNB" = "#FFEB3B",
+           "SR2ARTB" = "#FBC02D", 
+           "SR2AVTNB" = "#FF8C00",
+           "SR2AVTB" = "#993D00",
+           
+           "NSR2ARTNB" = "#FF9999",
+           "NSR2ARTB" = "#FF3333",
+           "NSR2AVTNB" = "#B22222",
+           "NSR2AVTB" = "#660000",
+           
+           "SCRRTNB" = "#99CCFF",
+           "SCRRTB" = "#99FFFF", 
+           "SCRVTNB" = "#0066CC",
+           "SCRVTB" = "#003366",
+           
+           "NSCRRTNB" = "#66CC00",
+           "NSCRRTB" = "#00FF33",
+           "NSCRVTNB" = "#006600",
+           "NSCRVTB" = "#003300",
+          
+          "CR" = "darkgreen",
+          "R2A" = "orange",
+          "M9" = "purple"
+)
+
+```
+
+#############################################################################################
+
+#Figure 2 -  ENS boxplot by treatment and regression
+
+#Read in cleaned and organized ASV table
+```{r}
+
+pmxc = read.csv("~/Desktop/PMXC6_7_combined_ASVtable_OGperSample.csv", header=T)
+
+```
+
+#specify plot labels for faceting
+```{r}
+facet_labels <- c("PMXC6" = "R2A.CR", 
+                  "PMXC7" = "M9.CR")
+```
+
+#Linear regression on Environmental Complexity and ENS (hill1)
+
+#Simple linear regression with complexity only T12 with 1% cutoff, beads as complex
+```{r}
+t12 = pmxc[pmxc$Time == "T12",]
+
+t12_6 = t12[t12$Experiment == "PMXC6",]
+
+t12_7 = t12[t12$Experiment == "PMXC7",]
+
+regression6 = ggplot(t12_6, aes(x=ComplexityB, y=hill1)) + 
+  theme_bw()+
+  geom_point(aes(color=Treatment)) + guides(col = guide_legend(nrow = 2)) +ylab("ENS (q=1)")+ geom_smooth(method="glm") +
+  coord_cartesian(ylim = c(0, 10)) +
+  theme(axis.title.x = element_text(size = 10, margin = margin(-30)),axis.title.y = element_text(size = 10),
+  legend.position = "none",
+  axis.line = element_line(colour = "black"),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.background = element_blank()
+)  +stat_cor(label.x = 0, label.y = 9.5, size = 4) +scale_color_manual(values = color) + scale_y_continuous(labels = scales::number_format(accuracy = 1))+facet_wrap(~Experiment, ncol=1, labeller = as_labeller(facet_labels)) + xlab("Environmental Complexity")
+
+regression7 = ggplot(t12_7, aes(x=ComplexityB, y=hill1)) + 
+  theme_bw()+
+  geom_point(aes(color=Treatment)) + guides(col = guide_legend(nrow = 2)) +ylab("ENS (q=1)")+ geom_smooth(method="glm") +
+  coord_cartesian(ylim = c(0, 10)) + theme(
+  axis.title.x = element_text(size = 10, margin = margin(t = -30)),axis.title.y = element_text(size = 10),
+  legend.position = "none",
+  axis.line = element_line(colour = "black"),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.background = element_blank()
+)  +stat_cor(label.x = 0, label.y = 9.5, size = 4) +scale_color_manual(values = color) + scale_y_continuous(labels = scales::number_format(accuracy = 1))+facet_wrap(~Experiment, ncol=1, labeller = as_labeller(facet_labels)) + xlab("Environmental Complexity")
+```
+
+```{r}
+
+library(cowplot)
+library(gridExtra)
+
+# Specify desired legend order
+t12$Treatment <- factor(t12$Treatment, levels = c("SM9RTNB", "SM9RTB", "SM9VTNB", "SM9VTB", "NSM9RTNB", "NSM9RTB", "NSM9VTNB", "NSM9VTB", "SR2ARTNB", "SR2ARTB", "SR2AVTNB", "SR2AVTB", "NSR2ARTNB", "NSR2ARTB", "NSR2AVTNB", "NSR2AVTB","SCRRTNB", "SCRRTB", "SCRVTNB", "SCRVTB", "NSCRRTNB", "NSCRRTB", "NSCRVTNB", "NSCRVTB"))
+
+
+# Build the plot
+legend_plot <- ggplot(t12, aes(x = ComplexityB, y = hill1, color = Treatment)) +
+  geom_point() +
+  scale_color_manual(values = color) +
+  theme_minimal() +
+  guides(color = guide_legend(nrow = 24, title.position = "top")) +  # <- title above
+  theme(
+    legend.position = "right",
+    legend.box.margin = margin(0, 0, 0, 0),  # Reduce margin around the entire legend box
+    legend.spacing.y = unit(0.5, "pt"),  # Reduce vertical space between legend items
+    legend.spacing.x = unit(0.5, "pt"),  # Reduce horizontal space between legend items
+    legend.key.size = unit(1.3, "lines"),  # Reduce size of legend keys
+    legend.title.align = 0.5  # Center-align title
+  )
+
+
+# Convert to grob
+g <- ggplotGrob(legend_plot)
+
+# Extract legend manually
+legend_grob <- g$grobs[which(sapply(g$grobs, function(x) x$name) == "guide-box")][[1]]
+
+
+
+```
+
+
+
+
+#Boxplot of diversity metrics by treatment on T12
+```{r}
+
+hill6 = ggplot(t12_6, aes(x=Treatment, y=hill1)) + 
+  theme_bw()+
+  geom_boxplot(aes(color=Treatment, reorder(Treatment, hill1))) + theme(legend.position="none", axis.text.x = element_text(angle = 90), axis.title.y = element_text(size = 10), axis.title.x = element_text(size = 10)) +ylab("ENS (q=1)") +scale_color_manual(values = color)+
+  coord_cartesian(ylim = c(0, 12))+ theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_line(color = "gray90"),   # Light gray major grid
+    panel.grid.minor = element_line(color = "gray95"),   # Even lighter minor grid
+    panel.background = element_blank()) + scale_y_continuous(labels = scales::number_format(accuracy = 1))+ facet_wrap(~Experiment, ncol=1, scales = "free", labeller = as_labeller(facet_labels))
+
+hill7 = ggplot(t12_7, aes(x=Treatment, y=hill1)) + 
+  theme_bw()+
+  geom_boxplot(aes(color=Treatment, reorder(Treatment, hill1))) +
+  coord_cartesian(ylim = c(0, 12))+ theme(legend.position="none", axis.text.x = element_text(angle = 90), axis.title.y = element_text(size = 10), axis.title.x = element_text(size = 10)) +ylab("ENS (q=1)") +scale_color_manual(values = color)+ theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_line(color = "gray90"),   # Light gray major grid
+    panel.grid.minor = element_line(color = "gray95"),   # Even lighter minor grid
+    panel.background = element_blank()) +scale_y_continuous(labels = scales::number_format(accuracy = 1))+ facet_wrap(~Experiment, ncol=1, scales = "free", labeller = as_labeller(facet_labels))
+
+
+```
+
+
+#Arrange plots and save as svg
+```{r}
+combined_plot = ggarrange(regression7, regression6,hill7, hill6,  ncol = 2, nrow=2, align="hv", labels = c("A", "B",  "C", "D"), hjust=0.2, vjust=0.6, font.label = list(size = 15,family="serif")) 
+
+combined_with_padding <- ggdraw() +
+  draw_plot(combined_plot, x = 0, y = 0, width = 1, height = 1) +
+  theme(plot.margin = margin(t = 10, r = 0, b = 0, l = 10, unit = "mm"))
+
+final_plot <- cowplot::plot_grid(
+  combined_with_padding,
+  legend_grob,
+  ncol = 2,
+  rel_widths = c(3, 1)
+)
+
+
+#svg("~/Desktop/PMXC_regression_Hill1_T12_icons.svg", height=8, width=12)
+
+final_plot
+
+#dev.off()
+```
+#############################################################################################
+
+#Figure 3 - GLM results observed and marginal
+
+```{r}
+
+#S.R2A.RT.NB as reference
+pmxc = read.csv("~/Desktop/PMXC6_7_combined_ASVtable_OGperSample.csv", header=T)
+
+t12 = pmxc[pmxc$Time == "T12",]
+
+t12_6 = t12[t12$Experiment == "PMXC6",]
+
+t12_7 = t12[t12$Experiment == "PMXC7",]
+
+#Set reference levels for model
+t12_6$Media <- factor(t12_6$Media, levels = c("R2A", "CR"))
+t12_6$Temp <- factor(t12_6$Temp, levels = c("RT", "VT"))
+t12_6$Shake <- factor(t12_6$Shake, levels = c("S", "NS"))
+t12_6$Beads <- factor(t12_6$Beads, levels = c("NB", "B"))
+
+t12_7$Media <- factor(t12_7$Media, levels = c("M9", "CR"))
+t12_7$Temp <- factor(t12_7$Temp, levels = c("RT", "VT"))
+t12_7$Shake <- factor(t12_7$Shake, levels = c("S", "NS"))
+t12_7$Beads <- factor(t12_7$Beads, levels = c("NB", "B"))
+
+```
+
+
+#Run GLM on T12 usig Hill1 calculated with 1% abundance cutoff 
+```{r}
+#PMXC6 (CR.R2A)
+
+#Run GLM model
+glm_pmxc6T12 <- glm(hill1  ~ Media*Shake*Temp*Beads, data=t12_6,family = Gamma(link = "log"))
+
+summary(glm_pmxc6T12)
+
+library(sjPlot) 
+
+glm_plot6 = plot_model(glm_pmxc6T12,show.values = TRUE, show.p=TRUE, value.offset=0.4,vline="black",transform="exp", type="est")
+
+
+glm_plot6 = glm_plot6 +theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank())+scale_color_manual(values = c("black","black")) + theme(text = element_text(size = 10)) + ggtitle("R2A.CR") + coord_flip(clip = "off")+ scale_y_log10(limits = c(0.1, 10))
+
+glm_plot_int6 = plot_model(glm_pmxc6T12,show.values = TRUE, show.p=TRUE, value.offset=0.3,vline="black", type="int")
+
+
+glm_int6 <- glm_plot_int6[[11]]
+
+plot_data6 <- glm_int6$data
+
+# Step 2: Create a new 'Media' column based on x
+plot_data6$Media <- factor(ifelse(plot_data6$x == 1, "R2A", "CR"), levels = c("R2A", "CR"))
+
+# Step 3: Create the plot colored by Media
+glm_plot_int6 <- ggplot(plot_data6, aes(x = group, y = predicted, color = Media)) +
+  geom_point(position = position_dodge(width = 0.3), size = 2.5) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2, position = position_dodge(width = 0.3)) +
+  facet_grid(panel ~ facet) +
+  theme_bw() +
+  scale_color_manual(values = c("R2A" = "orange", "CR" = "darkgreen")) +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.border = element_rect(color = "black", fill = NA),
+    strip.background = element_rect(fill = "grey90", colour = "black")
+  )+ ylab("ENS (q=1)")+xlab("Shake") + ggtitle("Effect plots for R2A.CR")
+```
+
+```{r}
+#PMXC7 (CR.M9)
+
+#Run GLM model
+glm_pmxc7T12 <- glm(hill1  ~Media*Shake*Temp*Beads, data=t12_7,family = Gamma(link = "log"))
+
+summary(glm_pmxc7T12)
+
+library(sjPlot) 
+glm_plot7 = plot_model(glm_pmxc7T12,show.values = TRUE, show.p=TRUE, value.offset=0.4,vline="black",transform="exp", type="est")
+
+
+glm_plot7 = glm_plot7 +theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),plot.margin = margin(t = 10, r = 10, b = 10, l = 10, unit = "pt"))+scale_color_manual(values = c("black","black")) + theme(text = element_text(size = 10)) + ggtitle("M9.CR")+
+  coord_flip(clip = "off") + scale_y_log10(limits = c(0.1, 10))
+
+glm_plot_int7 = plot_model(glm_pmxc7T12,show.values = TRUE, show.p=TRUE, value.offset=0.3,vline="black", type="int")
+
+
+glm_int7 <- glm_plot_int7[[11]]
+
+plot_data7 <- glm_int7$data
+
+# Step 2: Create a new 'Media' column based on x
+plot_data7$Media <- factor(ifelse(plot_data7$x == 1, "M9", "CR"), levels = c("M9", "CR"))
+
+# Step 3: Create the plot colored by Media
+glm_plot_int7 <- ggplot(plot_data7, aes(x = group, y = predicted, color = Media)) +
+  geom_point(position = position_dodge(width = 0.3), size = 2.5) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2, position = position_dodge(width = 0.3)) +
+  facet_grid(panel ~ facet) +
+  theme_bw() +
+  scale_color_manual(values = c("M9" = "purple", "CR" = "darkgreen")) +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.border = element_rect(color = "black", fill = NA),
+    strip.background = element_rect(fill = "grey90", colour = "black")
+  ) + ylab("ENS (q=1)") +xlab("Shake") + ggtitle("Effect plots for M9.CR")
+
+```
+
+
+```{r}
+library(svglite)
+
+#svglite("~/Desktop/PMXC_GLM_estimates_intPred_T12_min0.01_stacked_v2.svg", height=10, width=12)
+
+layout_matrix <- matrix(c(1,1,1,2, 2, 
+                         3,3,3,4,4), 
+                       nrow = 2, 
+                       byrow = TRUE)
+
+
+grid.arrange(glm_plot7, glm_plot_int7,glm_plot6, glm_plot_int6, layout_matrix= layout_matrix)
+
+
+#dev.off()
+```
+
+#############################################################################################
+
+#Figure 4 - NMDS plot & final community composition
+
+#Calculate bray curtis with relative abundance
+```{r}
+pmxc = read.csv("~/Desktop/PMXC6_7_combined_ASVtable.csv", header=T)
+
+#Subset by experiment and set treatment order for barplots
+
+pmxc$Day = as.factor(pmxc$Day)
+
+pmxc6 = pmxc[pmxc$Experiment == "PMXC6",]
+
+pmxc6$Treatment <- factor(pmxc6$Treatment, levels = c("R2A", "CR", "SR2ARTNB", "SR2ARTB", "SR2AVTNB", "SR2AVTB","NSR2ARTNB", "NSR2ARTB", "NSR2AVTNB", "NSR2AVTB", "SCRRTNB", "SCRRTB", "SCRVTNB", "SCRVTB","NSCRRTNB", "NSCRRTB", "NSCRVTNB", "NSCRVTB"))
+
+pmxc7 = pmxc[pmxc$Experiment == "PMXC7",]
+
+pmxc7$Treatment <- factor(pmxc7$Treatment, levels = c("M9", "CR", "SM9RTNB", "SM9RTB", "SM9VTNB", "SM9VTB","NSM9RTNB", "NSM9RTB", "NSM9VTNB", "NSM9VTB", "SCRRTNB", "SCRRTB", "SCRVTNB", "SCRVTB","NSCRRTNB", "NSCRRTB", "NSCRVTNB", "NSCRVTB"))
+```
+
+```{r}
+#Subset ASV abundances and save as matrix
+abund_table6 <- as.matrix(pmxc6[,2:29])
+abund_table7 <- as.matrix(pmxc7[,2:29])
+
+#Subset metadata and save as matrix
+meta_table6 <- pmxc6[,30:43]
+meta_table7 <- pmxc7[,30:43]
+
+#Calculate Bray-Curtis dissimilarity
+nmds6 = metaMDS(abund_table6, distance = "bray")
+nmds7 = metaMDS(abund_table7, distance = "bray")
+```
+
+#Organize NMDS scores in data frame with metadata
+```{r}
+
+data.scores6 = as.data.frame(scores(nmds6)$sites)
+
+#add columns to data frame 
+data.scores6$Sample = meta_table6$Sample
+data.scores6$Time = meta_table6$Time
+data.scores6$Media = meta_table6$Media
+data.scores6$Treatment = meta_table6$Treatment
+data.scores6$Beads = meta_table6$Beads
+data.scores6$Shake = meta_table6$Shake
+data.scores6$Temp = meta_table6$Temp
+data.scores6$Rep = meta_table6$Rep
+data.scores6$Day = meta_table6$Day
+
+head(data.scores6)
+
+data.scores7 = as.data.frame(scores(nmds7)$sites)
+
+#add columns to data frame 
+data.scores7$Sample = meta_table7$Sample
+data.scores7$Time = meta_table7$Time
+data.scores7$Media = meta_table7$Media
+data.scores7$Treatment = meta_table7$Treatment
+data.scores7$Beads = meta_table7$Beads
+data.scores7$Shake = meta_table7$Shake
+data.scores7$Temp = meta_table7$Temp
+data.scores7$Rep = meta_table7$Rep
+data.scores7$Day = meta_table7$Day
+
+head(data.scores7)
+
+```
+
+
+#NMDS showing only centroids for OG, T0, T12
+```{r}
+og_6 = subset(data.scores6, Time == "OG")
+t0_6= subset(data.scores6, Time == "T0")
+t12_6= subset(data.scores6, Time == "T12")
+
+scores6=rbind(og_6,t0_6,t12_6)
+
+og_7 = subset(data.scores7, Time == "OG")
+t0_7= subset(data.scores7, Time == "T0")
+t12_7= subset(data.scores7, Time == "T12")
+
+scores7=rbind(og_7,t0_7,t12_7)
+
+```
+
+```{r}
+#data.scores = na.omit(data.scores)
+centroids6 <- aggregate(cbind(NMDS1, NMDS2) ~ Treatment + Day, 
+                       data = scores6, 
+                       FUN = mean)
+centroidOG_6 = og_6
+centroid1_6 = centroids6[centroids6$Day=="3",]
+centroid2_6 = centroids6[centroids6$Day=="39",]
+
+# Step 7: Plot the NMDS with centroids
+
+scores6$Day = as.factor(scores6$Day)
+
+nmdsplot6 = ggplot(scores6, aes(x = NMDS1, y = NMDS2), color = Treatment) +
+  geom_point(alpha = 0.2, aes(color = Treatment, shape=Day), size=4) +  # Show individual points
+  geom_point(data = centroid1_6, aes(x = NMDS1, y = NMDS2, color = Treatment, shape=Day), size = 8) +
+  geom_point(data = centroid2_6, aes(x = NMDS1, y = NMDS2, color = Treatment, shape=Day), size = 8)+
+  geom_point(data = centroidOG_6, aes(x = NMDS1, y = NMDS2, color = Treatment, shape=Day), size = 8)+ scale_shape_manual(values=c(8,19,17))+
+  theme_minimal() +scale_color_manual(values = color) + theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(), legend.position="none", legend.box="vertical", legend.margin=margin(),legend.title = element_text(angle = 90, vjust=1), plot.margin = margin(t = 20, r = 20, b = 20, l = 20, unit = "pt"), axis.text=element_text(size=15), axis.title.y = element_text(size = 15), axis.title.x = element_text(size = 15)) + ggtitle("R2A.CR")+ annotate("text", x = Inf, y = -Inf, label = sprintf("Stress = %.2f", nmds6$stress),
+           hjust = 1.1, vjust = -0.5, size = 6)
+
+#data.scores = na.omit(data.scores)
+centroids_7 <- aggregate(cbind(NMDS1, NMDS2) ~ Treatment + Day, 
+                       data = scores7, 
+                       FUN = mean)
+centroidOG_7 = og_7
+centroid1_7 = centroids_7[centroids_7$Day=="3",]
+centroid2_7 = centroids_7[centroids_7$Day=="39",]
+
+# Step 7: Plot the NMDS with centroids
+scores7$Day = as.factor(scores7$Day)
+
+
+
+nmdsplot7 = ggplot(scores7, aes(x = NMDS1, y = NMDS2), color = Treatment) +
+  geom_point(alpha = 0.2, aes(color = Treatment, shape=Day), size=4) +  # Show individual points
+  geom_point(data = centroid1_7, aes(x = NMDS1, y = NMDS2, color = Treatment, shape=Day), size = 8) +
+  geom_point(data = centroid2_7, aes(x = NMDS1, y = NMDS2, color = Treatment, shape=Day), size = 8)+
+  geom_point(data = centroidOG_7, aes(x = NMDS1, y = NMDS2, color = Treatment, shape=Day), size = 8)+ scale_shape_manual(values=c(8,19,17))+
+  theme_minimal() +scale_color_manual(values = color) + theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(), legend.position="none", legend.box="vertical", legend.margin=margin(),legend.title = element_text(angle = 90, vjust=1), plot.margin = margin(t = 20, r = 20, b = 20, l = 20, unit = "pt"), axis.text=element_text(size=15), axis.title.y = element_text(size = 15), axis.title.x = element_text(size = 15)) + ggtitle("M9.CR") + annotate("text", x = Inf, y = -Inf, label = sprintf("Stress = %.2f", nmds7$stress),
+           hjust = 1.1, vjust = -0.5, size = 6)
+
+```
+
+
+
+```{r}
+#Make nmds plot with both pmxc6 and pmxc7 and extract legend
+
+scores = rbind(scores6, scores7)
+
+scores$Day = factor(scores$Day, levels = c("0", "3", "39"))
+
+
+scores$Treatment = factor(scores$Treatment, levels = c("SR2ARTNB", "SR2ARTB", "SR2AVTNB", "SR2AVTB","NSR2ARTNB", "NSR2ARTB", "NSR2AVTNB", "NSR2AVTB", "SM9RTNB", "SM9RTB", "SM9VTNB", "SM9VTB","NSM9RTNB", "NSM9RTB", "NSM9VTNB", "NSM9VTB",  "SCRRTNB", "SCRRTB", "SCRVTNB", "SCRVTB","NSCRRTNB", "NSCRRTB", "NSCRVTNB", "NSCRVTB", "CR", "R2A", "M9"))
+
+
+
+# Build the plot
+nmds_legend_plot <- ggplot(scores, aes(x = NMDS1, y = NMDS2), color = Treatment) +
+  geom_point(aes(color = Treatment, shape=Day), size=8) +  # Show individual point
+  theme_minimal() +scale_color_manual(values = color)  +  
+  theme(
+    legend.position = "right",
+    legend.box.margin = margin(0, 0, 0, 0),  # Reduce margin around the entire legend box
+    legend.spacing.y = unit(0.5, "pt"),  # Reduce vertical space between legend items
+    legend.spacing.x = unit(1, "pt"),  # Reduce horizontal space between legend items
+    legend.key.size = unit(2.5, "lines"),  # Reduce size of legend keys
+    legend.title.align = 0.5,
+    legend.text = element_text(size = 15),        # <- Increase legend text size
+    legend.title = element_text(size = 15)
+  )+ scale_shape_manual(values=c(8,19,17))
+
+
+# Convert to grob
+g <- ggplotGrob(nmds_legend_plot)
+
+# Extract legend manually
+nmds_legend <- g$grobs[which(sapply(g$grobs, function(x) x$name) == "guide-box")][[1]]
+
+```
+
+
+#Barplot final samples 
+```{r}
+t12_6=pmxc6[pmxc6$Time=="T12",]
+t12_7=pmxc7[pmxc7$Time=="T12",]
+
+#Melt data into long format for barplot
+long6 = reshape2::melt(t12_6, variable.name="Isolate", id.vars = c("Sample", "Time",  "Shake", "Media", "Temp", "Beads", "Rep", "Treatment", "ComplexityB", "Experiment", "ID", "Day", "hill0", "hill1", "hill2"))
+
+long6$Isolate <- as.character(long6$Isolate)
+
+#Melt data into long format for barplot
+long7 = reshape2::melt(t12_7, variable.name="Isolate", id.vars = c("Sample", "Time",  "Shake", "Media", "Temp", "Beads", "Rep", "Treatment", "ComplexityB", "Experiment", "ID", "Day", "hill0", "hill1", "hill2"))
+
+long7$Isolate <- as.character(long7$Isolate)
+
+# Define the desired order of ASVs
+ordered_asvs6 <- c("S9", "S33", "S8", "S120", "S14", 
+                   "S29", "S30", "S21", "S11", "S5", "S16", "S7", "S32", "S6", "S22", "S491", "S31", "S27", "S10", "S391", "S34", "S263", "S17", "S28", "S2", "S19", "Unassigned", "Rare") 
+
+ordered_asvs7 <- c("S9", "S8", "S120", "S14", 
+                   "S29", "S30", "S21", "S11", "S5", "S16", "S7", "S32", "S6", "S22", "S491", "S31", "S27", "S10", "S391", "S34", "S263", "S17", "S28", "S2", "S19", "Unassigned", "Rare") 
+
+# Set the factor levels in desired order
+long6$Isolate <- factor(long6$Isolate, levels = ordered_asvs6)
+long7$Isolate <- factor(long7$Isolate, levels = ordered_asvs7)
+
+
+comp6 = ggplot(data = long6, aes(fill=Isolate, y=value, x=Rep)) +    
+  theme_bw()+        
+    geom_bar(position="fill", stat="identity") +
+   scale_fill_manual(values = col28) + theme(strip.text = element_text(
+    size =10)) +theme(axis.text=element_text(size=15), legend.text = element_text(size=15),legend.key.size = unit(5, 'mm'), axis.text.x = element_text(angle = 90),  axis.title.x=element_blank(), plot.margin = margin(t = 20, r = 20, b = 20, l = 20, unit = "pt"),
+    axis.title.y = element_text(size = 15))+ ylab("Relative Abundance") + guides(fill=guide_legend(ncol =1)) + facet_wrap(~Treatment)+ theme(legend.position="none", strip.text = element_text(size = 15))+ ggtitle("R2A.CR")
+
+comp7 = ggplot(data = long7, aes(fill=Isolate, y=value, x=Rep)) +    
+  theme_bw()+        
+    geom_bar(position="fill", stat="identity") +
+   scale_fill_manual(values = col28) + theme(strip.text = element_text(
+    size =10)) +theme(axis.text=element_text(size=15), legend.text = element_text(size=15),legend.key.size = unit(5, 'mm'), axis.text.x = element_text(angle = 90),  axis.title.x=element_blank(), plot.margin = margin(t = 20, r = 20, b = 20, l = 20, unit = "pt"), axis.title.y = element_text(size = 15))+ ylab("Relative Abundance") + guides(fill=guide_legend(ncol =1)) + facet_wrap(~Treatment)+ theme(legend.position="none", strip.text = element_text(size = 15)) + ggtitle("M9.CR")
+```
+
+#Extract legend for barplot
+```{r}
+comp_legend_plot = ggplot(data = long6, aes(fill=Isolate, y=value, x=Rep)) +    
+  theme_bw()+        
+    geom_bar(position="fill", stat="identity") +
+   scale_fill_manual(values = col28) + theme(strip.text = element_text(
+    size =8)) +theme(axis.text=element_text(size=8), legend.text = element_text(size=10), axis.text.x = element_text(angle = 90),  axis.title.x=element_blank(), plot.margin = margin(t = 10, r = 10, b = 10, l = 10, unit = "pt"))+ ylab("Relative Abundance") + guides(fill = guide_legend(ncol = 2)) + facet_wrap(~Treatment)+ theme(
+    legend.position = "right",
+    legend.box.margin = margin(0, 0, 0, 0),  # Reduce margin around the entire legend box
+    legend.spacing.y = unit(0.5, "pt"),  # Reduce vertical space between legend items
+    legend.spacing.x = unit(1, "pt"),  # Reduce horizontal space between legend items
+    legend.key.size = unit(3, "lines"),  # Reduce size of legend keys
+    legend.title.align = 0.5,
+    legend.text = element_text(size = 15),        # <- Increase legend text size
+    legend.title = element_text(size = 15) 
+    )
+
+
+
+# Convert to grob
+g <- ggplotGrob(comp_legend_plot)
+
+# Extract legend manually
+comp_legend <- g$grobs[which(sapply(g$grobs, function(x) x$name) == "guide-box")][[1]]
+```
+
+
+
+```{r}
+#svg("~/Desktop/PMXC6_PMXC7_T12composition_nmds_v2.svg", width=25, height=20)
+ggarrange(nmdsplot7, nmdsplot6, nmds_legend, comp7, comp6, comp_legend, align = "hv")
+#dev.off()
+```
+
+#############################################################################################
+
+#Figure 5 - ANCOMBC dot plot
+
+```{r}
+library(phyloseq)
+library(ANCOMBC)
+```
+
+
+```{r}
+data6 = read.csv("~/Desktop/PMXC6_ASVtable_rawCounts_notRare_summedASVs_metadata.csv", header=T)
+
+data6 = data6[data6$Time == c("T12"),]
+
+abun6 = data6[,2:28]
+metadata6 = data6[,29:37]
+
+rownames(metadata6) = data6$Sample
+rownames(abun6) = data6$Sample
+
+
+tabun6 = t(abun6)
+
+OTU6 = otu_table(as.matrix(tabun6), taxa_are_rows = TRUE)
+physeq6 = phyloseq(OTU6)
+
+taxmat6 = matrix(sample(letters, 70, replace = TRUE), nrow = nrow(OTU6), ncol = 7)
+rownames(taxmat6) <- rownames(OTU6)
+colnames(taxmat6) <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+taxmat6
+
+TAX6 = tax_table(taxmat6)
+
+physeq6 = phyloseq(OTU6, TAX6)
+physeq6
+
+
+meta6 = sample_data(metadata6)
+
+meta6$Shake <- factor(meta6$Shake, levels=c("S", "NS"))
+meta6$Media <- factor(meta6$Media, levels=c("R2A", "CR"))
+meta6$Temp <- factor(meta6$Temp, levels=c("RT", "VT"))
+meta6$Beads <- factor(meta6$Beads, levels=c("NB", "B"))
+meta6$Treatment <- factor(meta6$Treatment, levels=c("SR2ARTNB", "SR2AVTNB", "SR2AVTB", "SR2ARTB", "SCRVTNB", "SCRVTB", "SCRRTNB", "SCRRTB", "NSR2AVTNB", "NSR2AVTB", "NSR2ARTNB", "NSR2ARTB", "NSCRVTNB", "NSCRVTB", "NSCRRTNB", "NSCRRTB"))
+
+
+physeq6 = merge_phyloseq(physeq6, meta6)
+physeq6
+
+
+output6 = ancombc2(data = physeq6, assay_name = "counts", tax_level = NULL,
+                       fix_formula = "Media * Shake * Temp * Beads",
+                       p_adj_method = "fdr", pseudo_sens = TRUE,
+                       prv_cut = 0.1,#change as needed, here prvcut set to only include ASV in 10 percent of samples, default is 30% 
+                       alpha = 0.05, n_cl = 3, verbose = TRUE)
+
+
+
+
+output6_res <- output6$res
+dim(output6_res)
+```
+
+```{r}
+#Ensuring all ASVs are included on y-axis
+full_asv_list <- data.frame(taxon = taxa_names(physeq6))
+
+full_res6 <- full_asv_list %>%
+  left_join(output6_res, by = "taxon")
+
+full_res6 <- full_res6 %>%
+  mutate(across(starts_with("diff_"), ~replace_na(., FALSE))) %>%
+  mutate(across(starts_with("lfc_"), ~replace_na(., NA_real_)))
+
+library(tidyverse)
+
+# Step 1: Prepare LFC, SE, significance
+lfc_df <- full_res6 %>%
+  select(taxon, starts_with("lfc_")) %>%
+  pivot_longer(-taxon, names_to = "term", values_to = "lfc") %>%
+  mutate(term = str_remove(term, "^lfc_"))
+
+sig_df <- full_res6 %>%
+  select(taxon, starts_with("diff_")) %>%
+  pivot_longer(-taxon, names_to = "term", values_to = "significant") %>%
+  mutate(term = str_remove(term, "^diff_"))
+
+# Step 2: Merge, replace non-significant lfc with NA
+plot_df6 <- lfc_df %>%
+  left_join(sig_df, by = c("taxon", "term")) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    lfc = ifelse(significant, lfc, NA),
+    term = str_replace_all(term, ":", " × ")  # for prettier facet labels
+  )
+
+# Step 3: Ensure factor levels to include all taxa and terms on axes
+plot_df6$taxon <- factor(plot_df6$taxon, levels = unique(plot_df6$taxon))
+plot_df6$term <- factor(plot_df6$term, levels = unique(plot_df6$term))
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+data7 = read.csv("~/Desktop/PMXC7_ASVtable_rawCounts_notRare_summedASVs_metadata.csv", header=T)
+
+data7 = data7[data7$Time == "T12",]
+
+abun7 = data7[,2:27]
+metadata7 = data7[,28:36]
+
+rownames(metadata7) = data7$Sample
+rownames(abun7) = data7$Sample
+
+
+tabun7 = t(abun7)
+
+OTU7 = otu_table(as.matrix(tabun7), taxa_are_rows = TRUE)
+physeq7 = phyloseq(OTU7)
+
+taxmat7 = matrix(sample(letters, 70, replace = TRUE), nrow = nrow(OTU7), ncol = 7)
+rownames(taxmat7) <- rownames(OTU7)
+colnames(taxmat7) <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+taxmat7
+
+TAX7 = tax_table(taxmat7)
+
+physeq7 = phyloseq(OTU7, TAX7)
+physeq7
+
+meta7 = sample_data(metadata7)
+
+meta7$Shake <- factor(meta7$Shake, levels=c("S", "NS"))
+meta7$Media <- factor(meta7$Media, levels=c("M9", "CR"))
+meta7$Temp <- factor(meta7$Temp, levels=c("RT", "VT"))
+meta7$Beads <- factor(meta7$Beads, levels=c("NB", "B"))
+meta7$Treatment <- factor(meta7$Treatment, levels=c("SM9RTNB", "SM9VTNB", "SM9VTB", "SM9RTB", "SCRVTNB", "SCRVTB", "SCRRTNB", "SCRRTB", "NSM9VTNB", "NSM9VTB", "NSM9RTNB", "NSM9RTB", "NSCRVTNB", "NSCRVTB", "NSCRRTNB", "NSCRRTB"))
+
+
+physeq7 = merge_phyloseq(physeq7, meta7)
+physeq7
+
+output7 = ancombc2(data = physeq7, assay_name = "counts", tax_level = NULL,
+                       fix_formula = "Media * Shake * Temp * Beads",
+                       p_adj_method = "fdr", pseudo_sens = TRUE,
+                       prv_cut = 0.1,#change as needed, here prvcut set to only include ASV in 10 percent of samples, default is 30% 
+                       alpha = 0.05, n_cl = 3, verbose = TRUE)
+
+
+
+
+output7_res <- output7$res
+dim(output7_res)
+```
+
+```{r}
+#Ensuring all ASVs are included on y-axis
+full_asv_list <- data.frame(taxon = taxa_names(physeq6))
+
+full_res7 <- full_asv_list %>%
+  left_join(output7_res, by = "taxon")
+
+full_res7 <- full_res7 %>%
+  mutate(across(starts_with("diff_"), ~replace_na(., FALSE))) %>%
+  mutate(across(starts_with("lfc_"), ~replace_na(., NA_real_)))
+
+library(tidyverse)
+
+# Step 1: Prepare LFC, SE, significance
+lfc_df <- full_res7 %>%
+  select(taxon, starts_with("lfc_")) %>%
+  pivot_longer(-taxon, names_to = "term", values_to = "lfc") %>%
+  mutate(term = str_remove(term, "^lfc_"))
+
+sig_df <- full_res7 %>%
+  select(taxon, starts_with("diff_")) %>%
+  pivot_longer(-taxon, names_to = "term", values_to = "significant") %>%
+  mutate(term = str_remove(term, "^diff_"))
+
+# Step 2: Merge, replace non-significant lfc with NA
+plot_df7 <- lfc_df %>%
+  left_join(sig_df, by = c("taxon", "term")) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    lfc = ifelse(significant, lfc, NA),
+    term = str_replace_all(term, ":", " × ")  # for prettier facet labels
+  )
+
+# Step 3: Ensure factor levels to include all taxa and terms on axes
+plot_df7$taxon <- factor(plot_df7$taxon, levels = unique(plot_df7$taxon))
+plot_df7$term <- factor(plot_df7$term, levels = unique(plot_df7$term))
+
+
+```
+
+```{r}
+
+library(phyloseq)
+library(tidyverse)
+
+# Step 1: Convert to relative abundance
+physeq_rel6 <- transform_sample_counts(physeq6, function(x) x / sum(x))
+
+# Step 2: Extract OTU table and ensure taxa are in rows
+otu_mat6 <- as(otu_table(physeq_rel6), "matrix")
+if (!taxa_are_rows(physeq_rel6)) {
+  otu_mat6 <- t(otu_mat6)
+}
+
+# Step 3: Compute average relative abundance per taxon
+avg_abund_df6 <- rowMeans(otu_mat6, na.rm = TRUE) %>%
+  enframe(name = "taxon", value = "mean_relative_abundance") %>%
+  arrange(desc(mean_relative_abundance))
+
+# Step 1: Convert to relative abundance
+physeq_rel7 <- transform_sample_counts(physeq7, function(x) x / sum(x))
+
+# Step 2: Extract OTU table and ensure taxa are in rows
+otu_mat7 <- as(otu_table(physeq_rel7), "matrix")
+if (!taxa_are_rows(physeq_rel7)) {
+  otu_mat7 <- t(otu_mat7)
+}
+
+# Step 3: Compute average relative abundance per taxon
+avg_abund_df7 <- rowMeans(otu_mat7, na.rm = TRUE) %>%
+  enframe(name = "taxon", value = "mean_relative_abundance") %>%
+  arrange(desc(mean_relative_abundance))
+
+
+```
+
+```{r}
+plot_df6$Experiment <- "R2A.CR"
+plot_df7$Experiment <- "M9.CR"
+
+plot_df6 <- plot_df6 %>%
+  left_join(avg_abund_df6, by = "taxon")
+
+plot_df7 <- plot_df7 %>%
+  left_join(avg_abund_df7, by = "taxon")
+
+plot_df6 <- plot_df6[!plot_df6$taxon %in% c("Unassigned", "Unassigne"), ]
+
+plot_df7 <- plot_df7[!plot_df7$taxon %in% c("Unassigned", "Unassigne"), ]
+
+
+ancombc_67 = rbind(plot_df6,plot_df7)
+
+```
+
+
+```{r}
+
+library(svglite)
+
+# Step 1: Define global taxon order (sorted or manual)
+ancombc_67 <- ancombc_67 %>%
+  arrange(taxon) %>%
+  mutate(
+    taxon = factor(taxon, levels = rev(c("S9", "S33", "S8", "S120", "S14", 
+                   "S29", "S30", "S21", "S11", "S5", "S16", "S7", "S32", "S6", "S22", "S491", "S31", "S27", "S10", "S391", "S34", "S263", "S17", "S28", "S2", "S19", "Unassigne", "Unassigned"))),  # lock y-axis order
+    term = factor(term, levels = unique(term))      # optional: control x order
+  )
+ancombc_67 <- ancombc_67[!ancombc_67$taxon %in% c("Unassigned", "Unassigne"), ]
+
+term_labels <- c(
+  "MediaCR" = "Cricket Media (CR)",
+  "ShakeNS" = "No Shake (NS)",
+  "TempVT" = "Variable Temp (VT)",
+  "BeadsB" = "Beads(B)",
+
+  "MediaCR × ShakeNS" = "CR*NS",
+  "MediaCR × TempVT" = "CR*VT",
+  "ShakeNS × TempVT" = "NS*VT",
+  "MediaCR × BeadsB" = "CR*B",
+  "ShakeNS × BeadsB" = "NS*B",
+  "TempVT × BeadsB" = "VT*B",
+
+  "MediaCR × ShakeNS × TempVT" = "CR*NS*VT",
+  "MediaCR × ShakeNS × BeadsB" = "CR*NS*B",
+  "MediaCR × TempVT × BeadsB" = "CR*VT*B",
+  "ShakeNS × TempVT × BeadsB" = "NS*VT*B",
+  "MediaCR × ShakeNS × TempVT × BeadsB" = "CR*NS*VT*B"
+)
+```
+
+
+
+
+#Dot plot of ANCOMBC results where color = LFC and size = average relative abundance of each ASV at T12 in their respective experiments
+```{r}
+
+#svglite("~/Desktop/PMXC_ANCOMBC_dotPlot_sizeRelAbun.svg", width=8, height=6)
+
+ancom_plot = ggplot(ancombc_67, aes(x = term, y = taxon)) +
+  # Background layer: all points (invisible, just to keep layout)
+  geom_point(
+    shape = 21, color = NA, fill = NA, stroke = 0, alpha = 0, size = 2,
+    na.rm = TRUE
+  ) +
+
+  # Foreground layer: only significant points
+  geom_point(
+    data = ancombc_67 %>% filter(significant),
+    aes(fill = lfc, size = mean_relative_abundance),
+    shape = 21, color = "black", stroke = 0.2, na.rm = TRUE
+  ) +
+
+  scale_fill_gradientn(
+    colours = c("blue", "#E0E0E0", "red"),
+    values = scales::rescale(c(-2, -0.5, 0, 0.5, 2)),
+    limits = c(-10, 10),
+    oob = scales::squish,
+    name = "Log Fold Change",
+    guide = guide_colorbar(
+      frame.colour = "black",
+      ticks.colour = "black",
+      frame.linewidth = 0.3,
+      ticks.linewidth = 0.3
+    )
+  ) +
+
+  scale_size(
+    range = c(2, 6),
+    breaks = c(0.001, 0.01, 0.1, 0.2, 0.3),
+    labels = c("<1%", "1%", "10%", "20%", "30%"),
+    name = "Mean Relative Abundance"
+  ) +
+
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+    axis.text.y = element_text(size = 8)
+  ) +
+  scale_x_discrete(labels = term_labels) +
+  facet_wrap(~Experiment) +
+  ylab("") + xlab("")
+
+
+#dev.off()
+
+
+
+```
+
+#Heatmap of relevant chitin genes
+```{r}
+
+library(dplyr)
+
+chi <- read.csv("~/Desktop/PMXC_chitin_hits_summary.csv", header = TRUE)
+
+# Rename strains to ASV
+strain_labels <- c(
+  "M07D5GC13" = "S16", "M09D5C28" = "S21", "M10D5C16" = "S27", "M10D5GC03" = "S29",
+  "M10D5GC09" = "S30", "M10D5GC11" = "S31", "M10D5GC19" = "S32", "M07D5C27" = "S391",
+  "M09D6C03" = "S491", "M03D5GC02" = "S5", "M03D5GC15" = "S6", "M03D5GC21" = "S7",
+  "M05D5C13" = "S9", "M05D5C33" = "S10", "M05D5GC01" = "S11", "M07D5C33" = "S14",
+  "M09D5GC07" = "S22", "M03D5GC05" = "S263", "M03D6GC30" = "S8", "M07D5GC17" = "S17",
+  "M03D5C18" = "S2", "M10D6GC05" = "S34", "M07D6GC08" = "S19", "M10D5C22" = "S28",
+  "M10D6C16" = "S33", "M07D6C12" = "S120"
+)
+
+chi <- chi %>%
+  mutate(ASV = recode(Strain, !!!strain_labels))
+
+
+#Set ASV order to match phylogenetic tree
+
+ordered_asvs <- c("S9", "S33", "S8", "S120", "S14", 
+                   "S29", "S30", "S21", "S11", "S11_c2", "S5", "S16", "S7", "S32", "S6", "S22", "S491", "S31", "S27", "S10", "S391", "S34", "S263", "S17", "S28", "S2", "S19") 
+
+chi$ASV <- factor(chi$ASV, levels = rev(ordered_asvs))
+
+```
+
+```{r}
+library(svglite)
+
+#Specify type order
+ordered_type <- c("Chitinase","Chitin Deacetylase", "Alpha-N-acetylglucosaminidase", "Beta-N-acetylglucosaminidase", "N-acetylglucosamine-6-phosphate deacetylase") 
+
+chi$Gene <- factor(chi$Gene, levels = ordered_type)
+
+#Specify facet order
+chi$Family <- factor(chi$Family, levels = c("GH18", "GH19","GH18|GH19", "CE4","GH5", "GH8", "GH89", "GH20", "EC3.5.1.25"))
+
+chi = chi[chi$Gene != "N-acetylglucosamine-6-phosphate deacetylase",]
+
+
+chit_plot = ggplot(chi, aes(x = Gene, y = ASV, fill = Count)) +
+  geom_tile(color = "black") +  # black outline around each tile
+  theme_linedraw() +
+  scale_fill_gradient(
+    low = "lightgreen", high = "darkgreen",
+    na.value = "white",  # white for missing data
+    name = "Counts"
+  ) +
+  scale_y_discrete(labels = strain_labels) +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    panel.border = element_rect(color = "black", fill = NA, size = 0.5)  # black outline of plot
+  ) +
+  labs(fill = "Count") 
+```
+
+#Save chitin plot as svg
+```{r}
+#svglite("~/Desktop/PMXC_genome_chitin_heatmap.svg", height=10,width=6)
+chit_plot
+#dev.off()
+
+```
+
+#Boxplot of relative abundances of two Pedobacter species (S17 and S2) in the M9.CR experiment, in SCRVTB and ~22% in SCRVTNB.
+```{r}
+
+# Convert OTU/ASV table to matrix
+otu_mat7 <- as(otu_table(physeq_rel7), "matrix")
+if (!taxa_are_rows(physeq_rel7)) {
+  otu_mat7 <- t(otu_mat7)
+}
+
+# Convert to dataframe and add ASV column
+otu_df7 <- as.data.frame(otu_mat7)
+otu_df7$ASV <- rownames(otu_mat7)
+
+# Extract sample metadata
+meta_df7 <- as.data.frame(sample_data(physeq_rel7))
+
+# Combine OTU/ASV table with metadata
+# Left join so metadata lines up with samples
+otu_meta_df7 <- cbind(meta_df7, t(otu_df7[, -ncol(otu_df7)]))
+
+# Subset to samples with the desired treatments
+otu_sub <- subset(otu_meta_df7, Treatment %in% c("SCRVTB", "SCRVTNB"))
+
+# Keep only metadata + the two ASVs of interest
+otu_sub <- otu_sub[, c("Treatment", "ASV17", "ASV2")]
+
+```
+
+#Abundance boxplot
+```{r}
+
+library(ggplot2)
+library(reshape2)  # or tidyr::pivot_longer
+
+# Convert to long format (ASV + abundance in one column)
+otu_long <- reshape2::melt(otu_sub, id.vars = "Treatment", 
+                 variable.name = "ASV", 
+                 value.name = "Abundance")
+
+# Make boxplot
+
+#svglite("~/Desktop/PMXC_pedo_plot.svg", height=6, width=6)
+
+ggplot(otu_long, aes(x = Treatment, y = Abundance, fill = ASV)) +
+  geom_boxplot() +
+  theme_bw() +
+  scale_fill_manual(
+    values = c("ASV17" = "goldenrod3", 
+               "ASV2"  = "darkorange3")
+  ) +
+  ylab("Relative Abundance")
+
+#dev.off()
+```
+#Boxplot of abundances for S34, S14 and S29 in CR and M9 at T12
+```{r}
+# Convert OTU/ASV table to matrix
+otu_mat7 <- as(otu_table(physeq_rel7), "matrix")
+if (!taxa_are_rows(physeq_rel7)) {
+  otu_mat7 <- t(otu_mat7)
+}
+
+# Convert to dataframe and add ASV column
+otu_df7 <- as.data.frame(otu_mat7)
+otu_df7$ASV <- rownames(otu_mat7)
+
+# Extract sample metadata
+meta_df7 <- as.data.frame(sample_data(physeq_rel7))
+
+# Combine OTU/ASV table with metadata
+# Left join so metadata lines up with samples
+otu_meta_df7 <- cbind(meta_df7, t(otu_df7[, -ncol(otu_df7)]))
+
+
+
+# Keep only metadata + the two ASVs of interest
+otu_sub <- otu_meta_df7[, c("Treatment", "ASV34", "ASV14", "ASV29", "Media")]
+
+# Convert to long format (ASV + abundance in one column)
+otu_long <- reshape2::melt(otu_sub, id.vars = c("Treatment", "Media"), 
+                 variable.name = "ASV", 
+                 value.name = "Abundance")
+```
+
+# Make boxplot
+```{r}
+#svglite("~/Desktop/PMXC_media_S34_S14_S29_plot.svg", height=6, width=6)
+
+ggplot(otu_long, aes(x = ASV, y = Abundance, fill = ASV)) +
+  geom_boxplot() +
+  theme_bw() +
+  scale_fill_manual(
+    values = c("ASV34" = "forestgreen", 
+               "ASV14"  = "navy",
+               "ASV29" = "mediumorchid1")
+  ) +
+  ylab("Relative Abundance") + facet_wrap(~Media)
+ 
+#dev.off()
+
+```
+
+
+```{r}
+
+sessionInfo()
+
+```
+
+
+
+
