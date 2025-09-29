@@ -1,14 +1,29 @@
+#This script provides details on sequence processing parameters for the bacterial coexistence experiment named CR.M9. Code was run in a QIIME2 environment on a HPC cluster.
+
+# activate the QIIME 2 conda environment (version 2021.4)
+
 conda activate qiime2-2021.4
+
+# import raw paired-end FASTQ files into QIIME 2 as a .qza artifact, using a manifest file that describes sample file paths and Phred+33 quality scores
 
 qiime tools import \
   --type 'SampleData[PairedEndSequencesWithQuality]' \
-  --input-path /bsuhome/jessicagronniger/scratch/6625_Illumina/PMXC7_manifest.txt \
+  --input-path /bsuhome/jessicagronniger/scratch/6625_Illumina/CR.M9_manifest.txt \
   --output-path paired-end-demux.qza \
   --input-format PairedEndFastqManifestPhred33V2
+
+# summarize demultiplexed sequences to visualize read counts and quality score plots (.qzv visualization)
 
 qiime demux summarize \
   --i-data paired-end-demux.qza \
   --o-visualization paired-end-demux.qzv
+
+# run DADA2 to denoise paired-end reads:
+#   - trim first bases (19 from forward, 20 from reverse)
+#   - truncate reads to 150 bp
+#   - use 20 CPU threads
+#   - require at least 8 bp overlap for merging
+# output: representative sequences, ASV feature table, and denoising stats
 
 qiime dada2 denoise-paired \
   --i-demultiplexed-seqs paired-end-demux.qza \
@@ -22,13 +37,19 @@ qiime dada2 denoise-paired \
   --o-table table-dada2.qza \
   --o-denoising-stats stats-dada2.qza --verbose
 
+# generate a visualization of DADA2 denoising stats (per-sample read filtering/merging results)
+
 qiime metadata tabulate \
   --m-input-file stats-dada2.qza \
   --o-visualization stats-dada2.qzv
 
+# export the feature table (ASV counts) to a BIOM format file in exported-files/
+
 qiime tools export \
   --input-path table-dada2.qza \
   --output-path exported-files
+
+# export representative ASV sequences to fasta format in exported-files/
 
 qiime tools export \
   --input-path rep-seqs-dada2.qza \
@@ -36,72 +57,107 @@ qiime tools export \
 
 ### Feature table summaries
 
+# summarize the ASV table with per-sample counts and rarefaction curves
+
 qiime feature-table summarize \
   --i-table table-dada2.qza \
   --o-visualization table-dada2.qzv \
-  --m-sample-metadata-file PMXC7_manifest.txt 
+  --m-sample-metadata-file CR.M9_manifest.txt 
+
+# list and visualize all representative ASV sequences
 
 qiime feature-table tabulate-seqs \
   --i-data rep-seqs-dada2.qza \
   --o-visualization rep-seqs-dada2.qzv
 
 ### Import into qiime2
+
+# import reference sequences for taxonomic assignment (FASTA) into QIIME 2
+
 qiime tools import \
   --type 'FeatureData[Sequence]' \
-  --input-path Fasta_PMXC7_16S.fasta \
+  --input-path CR.M9_16S_Sanger_RefTax.fasta \
   --output-path ref-sequences.qza
+
+# import reference taxonomy mapping file (TSV without headers) into QIIME 2
 
 qiime tools import \
   --type 'FeatureData[Taxonomy]' \
-  --input-path PMXC7_ref_taxonomy.txt \
+  --input-path CR.M9_ref_taxonomy_names.txt \
   --output-path ref-taxonomy.qza \
   --input-format HeaderlessTSVTaxonomyFormat
+
+# train a Naive Bayes classifier using the reference sequences and taxonomy
 
 qiime feature-classifier fit-classifier-naive-bayes \
   --i-reference-reads ref-sequences.qza \
   --i-reference-taxonomy ref-taxonomy.qza \
   --o-classifier classifier.qza
 
+# assign taxonomy to ASV representative sequences using the trained classifier
+
 qiime feature-classifier classify-sklearn \
   --i-classifier classifier.qza \
   --i-reads rep-seqs-dada2.qza \
   --o-classification taxonomy.qza
 
+# visualize taxonomy assignments
+
 qiime metadata tabulate \
   --m-input-file taxonomy.qza \
   --o-visualization taxonomy.qzv
+
+# rarefy the feature table to an even sequencing depth of 17841 reads per sample
 
 qiime feature-table rarefy \
   --i-table table-dada2.qza \
   --p-sampling-depth 17841 \
   --o-rarefied-table rarefied-table.qza
   
+# generate stacked bar plots of taxonomic composition for each sample
+
 qiime taxa barplot \
   --i-table rarefied-table.qza \
   --i-taxonomy taxonomy.qza \
-  --m-metadata-file PMXC7_manifest.txt  \
+  --m-metadata-file CR.M9_manifest.txt  \
   --o-visualization taxa-bar-plots-dada2.qzv
+
+# export the rarefied feature table to BIOM format
 
 qiime tools export \
   --input-path rarefied-table.qza \
   --output-path exported-feature-table
+
+# convert the BIOM table to a tab-delimited text file of ASV counts
 
 biom convert \
   -i exported-feature-table/feature-table.biom \
   -o ASV_counts.tsv \
   --to-tsv
 
+# export taxonomy assignments to a text file
+
 qiime tools export \
   --input-path taxonomy.qza \
   --output-path taxonomy_exported
 
+# export the full (unrarefied) ASV feature table
+
 qiime tools export \
   --input-path table-dada2.qza \
   --output-path feature_table_exported
+
+# convert the exported feature table from BIOM to tab-delimited text
 
 biom convert \
   -i feature_table_exported/feature-table.biom \
   -o feature_table.tsv \
   --to-tsv
 
+# combine ASV counts table with taxonomy assignments:
+#   - add "Taxonomy" column header
+#   - append taxonomy info to each ASV row
+# output: rarefied ASV table with taxonomy annotations
+
 awk 'NR==1{print $0"\tTaxonomy"} NR>1{getline tax < "taxonomy_exported/taxonomy.tsv"; print $0"\t"tax}' ASV_counts.tsv > rarefied_asv_table_with_taxonomy.txt
+
