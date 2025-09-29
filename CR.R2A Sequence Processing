@@ -76,7 +76,7 @@ qiime feature-table tabulate-seqs \
 
 qiime tools import \
   --type 'FeatureData[Sequence]' \
-  --input-path Fasta_PMXC6_16S.fasta \
+  --input-path CR.R2A_16S_Sanger_RefTax.fasta \
   --output-path ref-sequences.qza
 
 # import reference taxonomy mapping file (TSV without headers) into QIIME 2
