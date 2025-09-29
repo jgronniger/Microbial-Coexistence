@@ -1,0 +1,26 @@
+#Genome sequences from strain M05D5GC01 showed significant contamination. Full genome was subset to include only the 8 contigs with the correct taxonomic assignment and genome size for expected strain identity
+
+from Bio import SeqIO
+
+# Input / output files
+input_file = "GXXFRX_8_M05D5GC01_polished-assembly.gbff"
+output_file = "subset.gbff"
+
+# Contigs to keep (from user list)
+contigs_to_keep = {
+    "contig_11", "contig_12", "contig_13", "contig_2",
+    "contig_5", "contig_6", "contig_8", "contig_9"
+}
+
+# Subset and save
+count = 0
+with open(output_file, "w") as out_handle:
+    for record in SeqIO.parse(input_file, "genbank"):
+        if record.id in contigs_to_keep:
+            SeqIO.write(record, out_handle, "genbank")
+            count += 1
+
+count
+
+#Once subset, checkM was run on new genome subset to verify quality and completeness using Kbase
+
