@@ -1,0 +1,566 @@
+---
+title: "PMXC_SupplementalFigures"
+author: "Jessica Gronniger"
+date: "2025-08-01"
+output: html_document
+---
+#Load packages
+```{r}
+
+library(ggplot2)
+
+```
+
+#color scheme for bar plots (i.e. colors for each isolate)
+```{r}
+
+col28 <- c(
+  "S9"        = "dodgerblue2",      
+  "S33"       = "limegreen",           
+  "S8"        = "saddlebrown",       
+  "S120"      = "lightblue1",        
+  "S14"       = "navy",              
+  "S29"       = "mediumorchid1",     
+  "S30"       = "darkorchid4",       
+  "S21"       = "hotpink",           
+  "S11"       = "darkcyan",          
+  "S5"        = "paleturquoise1",    
+  "S16"       = "skyblue3",          
+  "S7"        = "deeppink4",         
+  "S32"       = "mediumvioletred",   
+  "S6"        = "plum3",             
+  "S22"       = "lightpink2",        
+  "S491"        = "purple4",          
+  "S31"       = "palegreen2",        
+  "S27"       = "darkgreen",         
+  "S10"       = "mediumaquamarine",         
+  "S391"        = "mistyrose2",        
+  "S34"       = "forestgreen",       
+  "S263"        = "thistle1",      
+  "S17"       = "goldenrod3",       
+  "S28"       = "lightgoldenrod1",  
+  "S2"        = "darkorange3",     
+  "S19"       = "salmon",            
+  "Unassigned"  = "gray70",            
+  "Rare"        = "gray30"             
+)
+
+
+```
+
+#Color scheme for treatments
+```{r}
+
+# Assign a unique color for each sample (grouped based on whether it contains "CR", "M9" or "R2A")
+color <- c("SM9RTNB" = "#FFC1E3",
+           "SM9RTB" = "#CC3399", 
+           "SM9VTNB" = "#FF3399",
+           "SM9VTB" = "#800040",
+           
+           "NSM9RTNB" = "#D1B3FF",
+           "NSM9RTB" = "#9966CC",
+           "NSM9VTNB" = "#4B0082",
+           "NSM9VTB" = "#2E003E",
+           
+          "SR2ARTNB" = "#FFEB3B",
+           "SR2ARTB" = "#FBC02D", 
+           "SR2AVTNB" = "#FF8C00",
+           "SR2AVTB" = "#993D00",
+           
+           "NSR2ARTNB" = "#FF9999",
+           "NSR2ARTB" = "#FF3333",
+           "NSR2AVTNB" = "#B22222",
+           "NSR2AVTB" = "#660000",
+           
+           "SCRRTNB" = "#99CCFF",
+           "SCRRTB" = "#99FFFF", 
+           "SCRVTNB" = "#0066CC",
+           "SCRVTB" = "#003366",
+           
+           "NSCRRTNB" = "#66CC00",
+           "NSCRRTB" = "#00FF33",
+           "NSCRVTNB" = "#006600",
+           "NSCRVTB" = "#003300",
+          
+          "CR" = "darkgreen",
+          "R2A" = "orange",
+          "M9" = "purple"
+)
+
+```
+
+#S1 Boxplot of growth rate for each isolate in M9 and R2A
+```{r}
+
+gr = read.csv("~/Desktop/PMXC_growthRate_M9_R2A.csv", header=T)
+
+#Set strain order to match phylogeny 
+
+ordered_asvs <- c("S9", "S33", "S8", "S120", "S14", 
+                   "S29", "S30", "S21", "S11", "S11_c2", "S5", "S16", "S7", "S32", "S6", "S22", "S491", "S31", "S27", "S10", "S391", "S34", "S263", "S17", "S28", "S2", "S19") 
+
+gr$Isolate <- factor(gr$Isolate, levels = ordered_asvs)
+
+#Plot growth rate
+
+ggplot(gr, aes(x = Isolate, y = r)) + 
+  theme_bw() +
+  geom_boxplot(aes(color = Isolate)) +
+  theme(
+    legend.position = "none",
+    axis.title.y = element_text(size = 10)
+  ) +
+  ylab("Growth Rate (r)") +
+  xlab("Isolate")+
+  scale_color_manual(values = col28) +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_line(color = "gray95"),
+    panel.background = element_blank()
+  ) +
+  facet_wrap(~Media, ncol=1)
+
+```
+
+
+
+
+
+
+
+#S2 Temperature plots for each experiment
+```{r}
+
+# Read CSV file
+data <- read.csv("~/Desktop/PMXC_Temps.csv", header = TRUE)
+
+# Convert DateTime column to POSIXct
+data$DateTime <- as.POSIXct(data$DateTime, format = "%m/%d/%Y %H:%M:%S")
+
+# Extract just the Date
+data$Date <- as.Date(data$DateTime)
+
+temp6 = data[data$Experiment=="PMXC6",]
+temp7 = data[data$Experiment=="PMXC7",]
+
+# Map each unique Date to a Day number (0 to 39)
+unique_dates <- sort(unique(temp6$Date))
+day_map <- setNames(0:(length(unique_dates)-1), unique_dates)
+temp6$Day <- day_map[as.character(temp6$Date)]
+
+unique_dates <- sort(unique(temp7$Date))
+day_map <- setNames(0:(length(unique_dates)-1), unique_dates)
+temp7$Day <- day_map[as.character(temp7$Date)]
+
+temp6 <- subset(temp6, Light <= 0)
+temp7 <- subset(temp7, Light <= 0)
+
+T6 = ggplot(temp6, aes(x = DateTime, y = Temperature, color=Temp)) +
+  geom_line() +
+  labs(title = "R2A.CR",
+       x = "Day",
+       y = "Temperature (°C)") +
+  theme_bw() +
+   scale_x_datetime(
+    breaks = seq(min(temp6$DateTime), max(temp6$DateTime), by = "48 hours"),
+    labels = function(x) {
+      day_labels <- temp6$Day[match(x, temp6$DateTime)]
+      return(day_labels)
+    }
+  ) + ylim(15,30) +scale_color_manual(values = c("RT" = "blue", "VT" = "red"))
+
+T7 = ggplot(temp7, aes(x = DateTime, y = Temperature, color = Temp)) +
+  geom_line() +
+  labs(title = "M9.CR",
+       x = "Day",
+       y = "Temperature (°C)") +
+  theme_bw() +
+  scale_x_datetime(
+    breaks = seq(min(temp7$DateTime), max(temp7$DateTime), by = "48 hours"),
+    labels = function(x) {
+      day_labels <- temp7$Day[match(x, temp7$DateTime)]
+      return(day_labels)
+    }
+  ) +
+  ylim(15, 30) +
+  scale_color_manual(values = c("RT" = "blue", "VT" = "red"))
+
+
+library(ggpubr)
+
+ggarrange(T7, T6, ncol=1)
+```
+
+#S3 Boxplot of ENS values at T12 by Experiment x Media
+```{r}
+pmxc = read.csv("~/Desktop/PMXC6_7_combined_ASVtable.csv", header=T)
+
+pmxc = pmxc[pmxc$Time == "T12",]
+
+library(ggplot2)
+library(dplyr)
+
+facet_labels <- c("PMXC6" = "R2A.CR", 
+                  "PMXC7" = "M9.CR")
+
+names(pmxc) <- trimws(names(pmxc))
+
+
+
+# Calculate stats for label placement above box + whiskers
+summary_stats <- pmxc %>%
+  dplyr::group_by(Media, Experiment) %>%
+  summarize(
+    mean_hill1 = mean(hill1, na.rm = TRUE),
+    sd_hill1 = sd(hill1, na.rm = TRUE),
+    max_hill1 = max(hill1, na.rm = TRUE),  # for label position
+    .groups = "drop"
+  ) %>%
+  mutate(
+    label = paste0("Mean±SD: ", round(mean_hill1, 1), "±", round(sd_hill1, 1)),
+    label_y = max_hill1 + 0.3  # move label above the whisker
+  )
+
+pmxc$Experiment <- factor(pmxc$Experiment, levels = c("PMXC7", "PMXC6"))
+
+# Plot
+ggplot(pmxc, aes(x = Media, y = hill1)) + 
+  theme_bw() +
+  geom_boxplot(aes(color = Media)) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    axis.title.y = element_text(size = 10),
+    axis.title.x = element_text(size = 10),
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_line(color = "gray95"),
+    panel.background = element_blank()
+  ) +
+  ylab("ENS (q=1)") +
+  scale_color_manual(values = color) +
+  coord_cartesian(ylim = c(0, 12)) +
+  scale_y_continuous(labels = scales::number_format(accuracy = 1)) +
+  facet_wrap(~Experiment, scales = "free", labeller = as_labeller(facet_labels))
+
+
+```
+
+#S4 Boxplot of Hill numbers at T12
+```{r}
+
+pmxc = read.csv("~/Desktop/PMXC6_7_combined_ASVtable.csv", header=T)
+
+pmxc = pmxc[pmxc$Time == "T12",]
+
+library(ggplot2)
+library(dplyr)
+
+pmxc7 = pmxc[pmxc$Experiment == "PMXC7",]
+pmxc6 = pmxc[pmxc$Experiment == "PMXC6",]
+
+# Plot
+H1_7 = ggplot(pmxc7, aes(x = Treatment, y = hill1)) + 
+  theme_bw() +
+  geom_boxplot(aes(color = Treatment, reorder(Treatment, hill1))) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_blank(),       # <-- remove tick labels
+    axis.title.x = element_blank(),      # <-- remove axis title
+    axis.title.y = element_text(size = 10)
+  ) +
+  ylab("ENS (q=1)") +
+  scale_color_manual(values = color) +
+  coord_cartesian(ylim = c(0, 18)) +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_line(color = "gray95"),
+    panel.background = element_blank()
+  ) +
+  scale_y_continuous(labels = scales::number_format(accuracy = 1)) +
+  ggtitle("M9.CR")
+
+H1_6 = ggplot(pmxc6, aes(x = Treatment, y = hill1)) + 
+  theme_bw() +
+  geom_boxplot(aes(color = Treatment, reorder(Treatment, hill1))) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10)
+  ) +
+  ylab("ENS (q=1)") +
+  scale_color_manual(values = color) +
+  coord_cartesian(ylim = c(0, 18)) +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_line(color = "gray95"),
+    panel.background = element_blank()
+  ) +
+  scale_y_continuous(labels = scales::number_format(accuracy = 1)) +
+  ggtitle("R2A.CR")
+
+H0_7 = ggplot(pmxc7, aes(x = Treatment, y = hill0)) + 
+  theme_bw() +
+  geom_boxplot(aes(color = Treatment, reorder(Treatment, hill1))) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10)
+  ) +
+  ylab("Richness (q=0)") +
+  scale_color_manual(values = color) +
+  coord_cartesian(ylim = c(0, 18)) +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_line(color = "gray95"),
+    panel.background = element_blank()
+  ) +
+  scale_y_continuous(labels = scales::number_format(accuracy = 1))
+
+H0_6 = ggplot(pmxc6, aes(x = Treatment, y = hill0)) + 
+  theme_bw() +
+  geom_boxplot(aes(color = Treatment, reorder(Treatment, hill1))) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10)
+  ) +
+  ylab("Richness (q=0)") +
+  scale_color_manual(values = color) +
+  coord_cartesian(ylim = c(0, 18)) +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_line(color = "gray95"),
+    panel.background = element_blank()
+  ) +
+  scale_y_continuous(labels = scales::number_format(accuracy = 1))
+
+
+H2_7 = ggplot(pmxc7, aes(x=Treatment, y=hill1)) + 
+  theme_bw()+
+  geom_boxplot(aes(color=Treatment, reorder(Treatment, hill1))) + theme(legend.position="none", axis.text.x = element_text(angle = 90), axis.title.y = element_text(size = 10), axis.title.x = element_text(size = 10)) +ylab("Evenness (q=2)") +scale_color_manual(values = color)+
+  coord_cartesian(ylim = c(0, 18))+ theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_line(color = "gray90"),   # Light gray major grid
+    panel.grid.minor = element_line(color = "gray95"),   # Even lighter minor grid
+    panel.background = element_blank()) + scale_y_continuous(labels = scales::number_format(accuracy = 1))
+
+H2_6 = ggplot(pmxc6, aes(x=Treatment, y=hill1)) + 
+  theme_bw()+
+  geom_boxplot(aes(color=Treatment, reorder(Treatment, hill1))) + theme(legend.position="none", axis.text.x = element_text(angle = 90), axis.title.y = element_text(size = 10), axis.title.x = element_text(size = 10)) +ylab("Evenness (q=2)") +scale_color_manual(values = color)+
+  coord_cartesian(ylim = c(0, 18))+ theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_line(color = "gray90"),   # Light gray major grid
+    panel.grid.minor = element_line(color = "gray95"),   # Even lighter minor grid
+    panel.background = element_blank()) + scale_y_continuous(labels = scales::number_format(accuracy = 1)) 
+```
+
+```{r}
+library(gridExtra)
+library(grid)
+
+List <- list(H1_7, H1_6,
+    H0_7, H0_6,
+    H2_7, H2_6)
+
+library(patchwork)
+
+#Plot
+wrap_plots(List,ncol = 2,nrow = 3)
+
+```
+
+#S5  Bray-Curtis changes over time
+```{r}
+#Load and organize data
+
+#ASV table should have ASVs in columns and samples in rows
+pmxc = read.csv("~/Desktop/PMXC6_7_combined_ASVtable_OGperSample.csv", header=T)
+
+pmxc7 = pmxc[pmxc$Experiment == "PMXC7",]
+pmxc6 = pmxc[pmxc$Experiment == "PMXC6",]
+
+pmxc6 <- pmxc6[pmxc6$Day %in% c(0, 3, 24, 36, 39), ]
+
+```
+
+
+```{r}
+library(dplyr)
+library(vegan)
+library(ggplot2)
+
+# Prepare ASV table and metadata
+asv.table <- pmxc6[, 2:29]
+asv.t <- asv.table[order(row.names(asv.table)), ]
+
+md <- pmxc6[, 30:43]
+md <- md[order(row.names(md)), ]
+stopifnot(all(row.names(asv.t) == row.names(md)))
+
+expfn <- asv.t
+md.expf <- md
+
+big <- data.frame()
+microcosm <- unique(md.expf$Treatment)
+
+for (i in microcosm) {
+  # Subset by treatment
+  md_sub <- md.expf[md.expf$Treatment == i, ]
+  asv_sub <- expfn[md.expf$Treatment == i, ]
+  
+  # Order by Day
+  ord <- order(md_sub$Day)
+  md_sub <- md_sub[ord, ]
+  asv_sub <- asv_sub[ord, ]
+  
+  # Drop empty ASVs
+  asv_sub <- asv_sub[, colSums(asv_sub) > 0]
+  
+  # Compute Bray-Curtis distance matrix
+  dist_mat <- as.matrix(vegdist(asv_sub, method = "bray"))
+  
+  # Compute average BC per Day (relative to all other samples in same treatment)
+  day_vals <- unique(md_sub$Day)
+  for (d in day_vals) {
+    idx <- which(md_sub$Day == d)
+    # mean of distances of samples at this day to all other samples in treatment
+    avg_bc <- mean(dist_mat[idx, -idx], na.rm = TRUE)  # exclude self-comparisons
+    big <- rbind(big, data.frame(
+      Treatment = i,
+      Day = d,
+      AvgBC = avg_bc
+    ))
+  }
+}
+
+# Convert Treatment to factor if desired
+big$Treatment = factor(big$Treatment, levels = c("SR2ARTNB", "SR2ARTB", "SR2AVTNB", "SR2AVTB","NSR2ARTNB", "NSR2ARTB", "NSR2AVTNB", "NSR2AVTB", "SCRRTNB", "SCRRTB", "SCRVTNB", "SCRVTB","NSCRRTNB", "NSCRRTB", "NSCRVTNB", "NSCRVTB"))
+
+# Plot
+BC6 = ggplot(big, aes(x = Day, y = AvgBC, color = Treatment)) +
+  geom_point(size = 3) +
+  geom_line(aes(group = Treatment), size = 1) +
+  theme_bw() +
+  labs(x = "Day", y = "Average Bray-Curtis dissimilarity", title = "R2A.CR") +
+  theme(
+    legend.position = "right",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12)
+  )+ facet_wrap(~Treatment)+theme(legend.position = "none")+scale_color_manual(values = color)
+```
+
+```{r}
+library(dplyr)
+library(vegan)
+library(ggplot2)
+
+# Prepare ASV table and metadata
+asv.table <- pmxc7[, 2:29]
+asv.t <- asv.table[order(row.names(asv.table)), ]
+
+md <- pmxc7[, 30:43]
+md <- md[order(row.names(md)), ]
+stopifnot(all(row.names(asv.t) == row.names(md)))
+
+expfn <- asv.t
+md.expf <- md
+
+big <- data.frame()
+microcosm <- unique(md.expf$Treatment)
+
+for (i in microcosm) {
+  # Subset by treatment
+  md_sub <- md.expf[md.expf$Treatment == i, ]
+  asv_sub <- expfn[md.expf$Treatment == i, ]
+  
+  # Order by Day
+  ord <- order(md_sub$Day)
+  md_sub <- md_sub[ord, ]
+  asv_sub <- asv_sub[ord, ]
+  
+  # Drop empty ASVs
+  asv_sub <- asv_sub[, colSums(asv_sub) > 0]
+  
+  # Compute Bray-Curtis distance matrix
+  dist_mat <- as.matrix(vegdist(asv_sub, method = "bray"))
+  
+  # Compute average BC per Day (relative to all other samples in same treatment)
+  day_vals <- unique(md_sub$Day)
+  for (d in day_vals) {
+    idx <- which(md_sub$Day == d)
+    # mean of distances of samples at this day to all other samples in treatment
+    avg_bc <- mean(dist_mat[idx, -idx], na.rm = TRUE)  # exclude self-comparisons
+    big <- rbind(big, data.frame(
+      Treatment = i,
+      Day = d,
+      AvgBC = avg_bc
+    ))
+  }
+}
+
+# Convert Treatment to factor if desired
+big$Treatment = factor(big$Treatment, levels = c("SM9RTNB", "SM9RTB", "SM9VTNB", "SM9VTB","NSM9RTNB", "NSM9RTB", "NSM9VTNB", "NSM9VTB",  "SCRRTNB", "SCRRTB", "SCRVTNB", "SCRVTB","NSCRRTNB", "NSCRRTB", "NSCRVTNB", "NSCRVTB"))
+
+# Plot
+BC7 = ggplot(big, aes(x = Day, y = AvgBC, color = Treatment)) +
+  geom_point(size = 3) +
+  geom_line(aes(group = Treatment), size = 1) +
+  theme_bw() +
+  labs(x = "Day", y = "Average Bray-Curtis dissimilarity", title = "M9.CR") +
+  theme(
+    legend.position = "right",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12)
+  )+ facet_wrap(~Treatment)+theme(legend.position = "none")+scale_color_manual(values = color)
+```
+
+```{r}
+ggarrange(BC7, BC6)
+
+```
+
+
+#S6 Original Composition plots
+```{r}
+pmxc = read.csv("~/Desktop/PMXC6_7_combined_ASVtable.csv", header=T)
+
+#Subset to only OG
+pmxc = pmxc[pmxc$Time == "OG",]
+
+#Melt data into long format for barplot
+long = reshape2::melt(pmxc, variable.name="Isolate", id.vars = c("Sample", "Time",  "Shake", "Media", "Temp", "Beads", "Rep", "Treatment", "ComplexityB", "Experiment", "ID", "Day", "hill0", "hill1", "hill2"))
+
+
+
+# Define the desired order of ASVs
+ordered_asvs <- c("S9", "S33", "S8", "S120", "S14", 
+                   "S29", "S30", "S21", "S11", "S5", "S16", "S7", "S32", "S6", "S22", "S491", "S31", "S27", "S10", "S391", "S34", "S263", "S17", "S28", "S2", "S19", "Unassigned", "Rare") 
+
+
+
+# Set the factor levels in desired order
+long$Isolate <- factor(long$Isolate, levels = ordered_asvs)
+long$Experiment <- factor(long$Experiment, levels = c("PMXC7", "PMXC6"))
+
+facet_labels <- c("PMXC6" = "R2A.CR", 
+                  "PMXC7" = "M9.CR")
+
+ggplot(data = long, aes(fill=Isolate, y=value, x=Media)) +    
+  theme_bw()+        
+    geom_bar(position="fill", stat="identity") +
+   scale_fill_manual(values = col28) + theme(strip.text = element_text(
+    size =10)) +theme(axis.text=element_text(size=15), legend.text = element_text(size=15),legend.key.size = unit(5, 'mm'), axis.text.x = element_text(angle = 90),  axis.title.x=element_blank(), plot.margin = margin(t = 20, r = 20, b = 20, l = 20, unit = "pt"),
+    axis.title.y = element_text(size = 15))+ ylab("Relative Abundance") + guides(fill=guide_legend(ncol =1)) + facet_wrap(~Experiment, scales="free", labeller = as_labeller(facet_labels))
+
+
+```
+
+
+
