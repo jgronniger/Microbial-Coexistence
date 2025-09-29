@@ -1,0 +1,21 @@
+#This code was used to create a subset of all annotated genomes that includes all potential chitin-related genes. Resulting subset was manually curated to include gene counts for four main chitin degradation genes
+
+#Pull out all chitin related genes
+
+echo -e "File\tProduct\tCount" > chitin_hits_summary.tsv && \
+for file in *.tsv; do
+  header=$(grep -m1 '^#Sequence Id' "$file" | sed 's/^#//')
+  prod_col=$(echo "$header" | tr '\t' '\n' | grep -ni '^Product$' | cut -d: -f1)
+
+  [[ -n "$prod_col" ]] || { echo "Missing Product column in $file"; continue; }
+
+  awk -v pcol="$prod_col" -v fname="$file" 'BEGIN {
+    FS=OFS="\t"; IGNORECASE=1
+  }
+  $0 !~ /^#/ && $pcol ~ /chitinase|chitin|family 18|family 19|family 20|family 89|glycosyl hydrolase|glycoside hydrolase|acetylglucosaminidase|acetylhexosaminidase|acetylglucosamine|family 5|family 7|family 8|family 46|family 75|family 80/ {
+    hits[$pcol]++
+  }
+  END {
+    for (h in hits) print fname, h, hits[h]
+  }' "$file" >> chitin_hits_summary.tsv
+done
