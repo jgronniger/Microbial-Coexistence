@@ -1,0 +1,372 @@
+---
+title: "MXC_Isolate_GrowthCurves"
+output: html_document
+date: "2026-04-01"
+---
+
+#### Load Required Packages ####
+```{r}
+packages_to_load <- c(
+  "ggplot2", "vegan", "lme4", "effects", "tidyverse", "growthcurver", "devtools",
+  "plater", "janitor", "reshape", "readr", "ggbiplot", "lubridate"
+)
+
+# Load and install required packages
+for (i in packages_to_load) { #Installs packages if not yet installed
+  if (!require(i, character.only = TRUE)) install.packages(i)
+}
+```
+
+#Read in growth curve data for isolates grown in R2A, M9TC with glucose, and M9TC without glucose and rename columns based on sample IDs in metadata file
+```{r}
+#R2A
+r2a_data = read.csv("~/Desktop/MXC_Isolate_Growth_Curves/R2A/PMXC_IsolateGC_R2A_data.csv")
+r2a_meta = read.csv("~/Desktop/MXC_Isolate_Growth_Curves/R2A/PMXC_IsolateGC_R2A_metadata.csv")
+
+#M9TC no glucose
+M9ng_data = read.csv("~/Desktop/MXC_Isolate_Growth_Curves/M9TC_noGlucose/PMXC_IsolateGC_M9NoGlucose_data.csv")
+M9ng_meta = read.csv("~/Desktop/MXC_Isolate_Growth_Curves/M9TC_noGlucose/PMXC_IsolateGC_M9NoGlucose_metadata.csv")
+
+#M9TC with glucose
+M9wg_data = read.csv("~/Desktop/MXC_Isolate_Growth_Curves/M9TC_withGlucose/PMXC_IsolateGC_M9TCglucose_data.csv")
+M9wg_meta = read.csv("~/Desktop/MXC_Isolate_Growth_Curves/M9TC_withGlucose/PMXC_IsolateGC_M9TCglucose_metadata.csv")
+
+#Function to rename columns
+rename_with_metadata <- function(data, meta, time_col = "Time") {
+  
+  meta <- meta %>%
+    mutate(SampleName = paste(tube_id, rep, sep = "_"))
+  
+  # keep time + wells
+  data <- data[, colnames(data) %in% c(time_col, meta$wells)]
+  
+  # rename only non-time columns
+  non_time <- colnames(data) != time_col
+  
+  colnames(data)[non_time] <- meta$SampleName[
+    match(colnames(data)[non_time], meta$wells)
+  ]
+  
+  return(data)
+}
+
+
+#Rename data columns
+r2a_data  <- rename_with_metadata(r2a_data, r2a_meta)
+M9ng_data <- rename_with_metadata(M9ng_data, M9ng_meta)
+M9wg_data <- rename_with_metadata(M9wg_data, M9wg_meta)
+
+```
+
+#Subtract average blank value from every OD measurement at each timepoint
+```{r}
+
+blank_correct <- function(data, time_col = "Time", blank_pattern = "^blank") {
+  
+  # make names unique (prevents crash)
+  names(data) <- make.unique(names(data))
+  
+  # find blank columns (handles blank, blank.1, blank.2, etc.)
+  blank_cols <- grep(blank_pattern, names(data), ignore.case = TRUE, value = TRUE)
+  
+  if (length(blank_cols) == 0) {
+    stop("No blank columns found.")
+  }
+  
+  # compute row-wise blank mean
+  blank_mean <- data %>%
+    select(all_of(blank_cols)) %>%
+    rowMeans(na.rm = TRUE)
+  
+  data_corrected <- data %>%
+    mutate(across(
+      -c(all_of(time_col), all_of(blank_cols)),
+      ~ .x - blank_mean
+    )) %>%
+    select(-all_of(blank_cols)) %>%
+    mutate(across(
+      -all_of(time_col),
+      ~ pmax(.x, 0)
+    ))
+  
+  return(data_corrected)
+}
+
+#Subtract blank values from samples
+r2a_corrected <- blank_correct(r2a_data)
+M9ng_corrected <- blank_correct(M9ng_data)
+M9wg_corrected <- blank_correct(M9wg_data)
+
+```
+
+#Convert time column from HH:MM:SS to numerical
+```{r}
+
+convert_time_to_hours <- function(df, time_col = "Time") {
+  
+  if (!is.numeric(df[[time_col]])) {
+    df[[time_col]] <- hms(df[[time_col]])
+    df[[time_col]] <- as.numeric(df[[time_col]], units = "hours")
+  }
+  
+  return(df)
+}
+
+r2a_corrected <- convert_time_to_hours(r2a_corrected)
+M9ng_corrected <- convert_time_to_hours(M9ng_corrected)
+M9wg_corrected <- convert_time_to_hours(M9wg_corrected)
+```
+
+#Plot individual growth curves
+```{r}
+
+plot_replicates_by_isolate <- function(df, time_col = "Time") {
+  
+  df_long <- df %>%
+    pivot_longer(
+      cols = -all_of(time_col),
+      names_to = "Sample",
+      values_to = "Value"
+    ) %>%
+    separate(Sample, into = c("Isolate", "Replicate"), sep = "_", remove = FALSE)
+  
+  ggplot(df_long, aes(x = .data[[time_col]], y = Value, group = Sample)) +
+    geom_line(alpha = 0.7) +
+    facet_wrap(~Isolate, scales = "free_y") +
+    theme_bw() +
+    labs(x = "Time (Hours)", y = "OD600")
+}
+
+plot_replicates_by_isolate(r2a_corrected)
+plot_replicates_by_isolate(M9ng_corrected)
+plot_replicates_by_isolate(M9wg_corrected)
+```
+
+#Calculate growth metrics like k(carrying capacity), N0(starting population), r(growthrate), sigma(lag time) using Growthcurver
+```{r}
+
+r2a_gr <- SummarizeGrowthByPlate(r2a_corrected,bg_correct = "none", plot_fit = TRUE, 
+                                 plot_file = "r2a_gr_plots.pdf")
+
+M9ng_gr <- SummarizeGrowthByPlate(M9ng_corrected,bg_correct = "none", plot_fit = TRUE, 
+                                 plot_file = "M9ng_gr_plots.pdf")
+
+M9wg_gr <- SummarizeGrowthByPlate(M9wg_corrected,bg_correct = "none", plot_fit = TRUE, 
+                                 plot_file = "M9wg_gr_plots.pdf")
+```
+#Label each dataset by the type of media used and combine into a single dataset
+```{r}
+
+#Function to seperate sample ID into sample name and rep number, and adding a column specifying media used
+process_growthcurver <- function(df, media_name) {
+  
+  df %>%
+    separate(sample, into = c("Sample", "Rep"), sep = "_") %>%
+    mutate(Media = media_name)
+}
+
+r2a_df  <- process_growthcurver(r2a_gr,  "R2A")
+M9ng_df <- process_growthcurver(M9ng_gr, "M9ng")
+M9wg_df <- process_growthcurver(M9wg_gr, "M9wg")
+
+#combine to get all growth data together
+combined_df <- bind_rows(r2a_df, M9ng_df, M9wg_df)
+
+#Fix samples names so they all start with "S"
+combined_df <- combined_df %>%
+  mutate(
+    Sample = case_when(
+      str_detect(Sample, "^ASV\\d+$") ~ str_replace(Sample, "^ASV", "S"),
+      str_detect(Sample, "^\\d+$")    ~ paste0("S", Sample),
+      TRUE ~ Sample
+    )
+  )
+
+#Remove S33 from M9 media run since it did not grow
+combined_df <- combined_df %>%
+  filter(!(Sample == "S33" & Media %in% c("M9ng", "M9wg")))
+
+```
+
+#summarise data to get average metrics for each isolate
+```{r}
+
+summary_df <- combined_df %>%
+  group_by(Sample, Media) %>%
+  summarise(
+    n_reps = dplyr::n(),
+    k_mean      = mean(k, na.rm = TRUE),
+    k_sd        = sd(k, na.rm = TRUE),
+    N0_mean     = mean(n0, na.rm = TRUE),
+    N0_sd       = sd(n0, na.rm = TRUE),
+    r_mean      = mean(r, na.rm = TRUE),
+    r_sd        = sd(r, na.rm = TRUE),
+    sigma_mean  = mean(sigma, na.rm = TRUE),
+    sigma_sd    = sd(sigma, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+```
+
+#Export growth metrics as csv files 
+```{r}
+
+write.csv(combined_df, "~/Desktop/MXC_Isolate_Growth_Curves/MXC_Isolate_GrowthMetrics_perMedia.csv")
+
+write.csv(summary_df, "~/Desktop/MXC_Isolate_Growth_Curves/MXC_Isolate_GrowthMetrics_perMedia_summarized.csv")
+
+```
+
+#color scheme for isolates 
+```{r}
+
+col28 <- c(
+  "S9"        = "dodgerblue2",      
+  "S33"       = "limegreen",           
+  "S8"        = "saddlebrown",       
+  "S120"      = "lightblue1",        
+  "S14"       = "navy",              
+  "S29"       = "mediumorchid1",     
+  "S30"       = "darkorchid4",       
+  "S21"       = "hotpink",           
+  "S11"       = "darkcyan",          
+  "S5"        = "paleturquoise1",    
+  "S16"       = "skyblue3",          
+  "S7"        = "deeppink4",         
+  "S32"       = "mediumvioletred",   
+  "S6"        = "plum3",             
+  "S22"       = "lightpink2",        
+  "S491"        = "purple4",          
+  "S31"       = "palegreen2",        
+  "S27"       = "darkgreen",         
+  "S10"       = "mediumaquamarine",         
+  "S391"        = "mistyrose2",        
+  "S34"       = "forestgreen",       
+  "S263"        = "thistle1",      
+  "S17"       = "goldenrod3",       
+  "S28"       = "lightgoldenrod1",  
+  "S2"        = "darkorange3",     
+  "S19"       = "salmon",            
+  "Unassigned"  = "gray70",            
+  "Rare"        = "gray30"             
+)
+
+
+```
+
+
+#Boxplot of growth rate for each isolate in M9 (with and without added glucose) and R2A
+```{r}
+
+#Set strain order to match phylogeny 
+
+ordered_asvs <- c("S9", "S33", "S8", "S120", "S14", 
+                   "S29", "S30", "S21", "S11", "S5", "S16", "S7", "S32", "S6", "S22", "S491", "S31", "S27", "S10", "S391", "S34", "S263", "S17", "S28", "S2", "S19") 
+
+combined_df$Sample <- factor(combined_df$Sample, levels = ordered_asvs)
+
+#Plot growth rate
+
+#pdf("~/Desktop/SF1_GrowthRates.pdf", height=8, width=10)
+ggplot(combined_df, aes(x = Sample, y = r)) + 
+  theme_bw() +
+  geom_boxplot(aes(color = Sample)) +  
+  theme(
+    legend.position = "none",
+    axis.title.y = element_text(size = 10),
+    axis.text = element_text(color = "black"),  # black tick labels
+    axis.line = element_line(colour = "black"),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), 
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_line(color = "gray95"),
+    panel.background = element_blank()
+  ) +
+  ylab("Growth Rate (r)") +
+  xlab("Isolate") +
+  scale_color_manual(values = col28) +
+  facet_wrap(~Media, ncol = 1)
+
+#dev.off()
+```
+#Comparing the relative influence of casaminos as a primary carbon source compared to casamino + glucose media
+```{r}
+
+# subset to only M9
+m9_df <- combined_df %>%
+  filter(Media %in% c("M9ng", "M9wg"))
+
+
+#remove outlier with near zero value S17
+m9_df <- m9_df %>%
+  slice(-136)
+
+ggplot(m9_df, aes(x = Sample, y = r)) + 
+  theme_bw() +
+  geom_boxplot(aes(color = Sample)) +  
+  theme(
+    legend.position = "none",
+    axis.title.y = element_text(size = 10),
+    axis.text = element_text(color = "black"),  # black tick labels
+    axis.line = element_line(colour = "black"),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), 
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_line(color = "gray95"),
+    panel.background = element_blank()
+  ) +
+  ylab("Growth Rate (r)") +
+  xlab("Isolate") +
+  scale_color_manual(values = col28) +
+  facet_wrap(
+  ~Media,
+  ncol = 1,
+  labeller = as_labeller(c(
+    M9ng = "M9 + Casaminos",
+    M9wg = "M9 + Casaminos + Glucose"
+  ))
+)
+```
+#Make summary table of average growth rates in M9 with and without glucose
+```{r}
+#removed one rep from S7 and another from S17, values were significantly different from the other two reps, which were consistent
+
+cas_effect = read.csv("~/Desktop/MXC_Isolate_Growth_Curves/MXC_Isolate_GrowthMetrics_perMedia_2outliersRemoved.csv")
+
+#Subset to only M9 media
+cas_effect <- cas_effect %>%
+  filter(Media %in% c("M9ng", "M9wg"))
+
+#Summarize without outliers
+cas_summary <- cas_effect %>%
+  group_by(Sample, Media) %>%
+  summarise(
+    n_reps = dplyr::n(),
+    k_mean      = mean(k, na.rm = TRUE),
+    k_sd        = sd(k, na.rm = TRUE),
+    N0_mean     = mean(n0, na.rm = TRUE),
+    N0_sd       = sd(n0, na.rm = TRUE),
+    r_mean      = mean(r, na.rm = TRUE),
+    r_sd        = sd(r, na.rm = TRUE),
+    sigma_mean  = mean(sigma, na.rm = TRUE),
+    sigma_sd    = sd(sigma, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+cas_summary_sub <- cas_summary %>%
+  select(Sample, Media, r_mean, r_sd)
+
+#Make summary table for comparison
+
+cas_summary_wide <- cas_summary %>%
+  mutate(
+    r_summary = sprintf("%.3f ± %.3f", r_mean, r_sd)
+  )
+
+cas_summary_wide <- cas_summary_wide %>%
+  select(Sample, Media, r_summary) %>%
+  pivot_wider(
+    names_from = Media,
+    values_from = r_summary
+  )
+
+write.csv(cas_summary_wide, "~/Desktop/MXC_Isolate_Growth_Curves/M9_casaminoEffect_summary.csv")
+```
