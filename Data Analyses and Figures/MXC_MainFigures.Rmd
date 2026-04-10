@@ -1,19 +1,19 @@
 ---
 title: "MXC_MainFigures"
 author: "Jessica Gronniger"
-date: "2025-09-29"
+date: "2026-04-10"
 output: html_document
 ---
 
 #Load required packages
 ```{r, warning=FALSE, message=FALSE, results=FALSE}
 library(devtools)
+library(sjPlot)
 library(RColorBrewer)
 library(tidyr)
 library(dplyr)
 library(reshape2)
 library("vegan")
-library("ggplot2")
 library("gridExtra")
 library(ggrepel)
 library(grid)
@@ -24,6 +24,12 @@ library(hillR)
 library(lmerTest)
 library(tidyverse)
 library(cowplot)
+library(ggplot2)
+library(ggeffects) 
+library(patchwork)   
+library(svglite)
+library(phyloseq)
+library(ANCOMBC)
 ```
 
 #color scheme for bar plots (i.e. colors for each isolate)
@@ -108,58 +114,129 @@ color <- c("SM9RTNB" = "#FFC1E3",
 
 #Figure 2 -  ENS boxplot by treatment and regression
 
-#Read in cleaned and organized ASV table
-```{r}
 
+```{r}
+#Read in cleaned and organized ASV table
 pmxc = read.csv("~/Desktop/PMXC6_7_combined_ASVtable_OGperSample.csv", header=T)
 
-```
 
 #specify plot labels for faceting
-```{r}
-facet_labels <- c("PMXC6" = "R2A.CR", 
-                  "PMXC7" = "M9.CR")
-```
+
+facet_labels <- c("PMXC6" = "Experiment 2", 
+                  "PMXC7" = "Experiment 1")
+
 
 #Linear regression on Environmental Complexity and ENS (hill1)
 
-#Simple linear regression with complexity only T12 with 1% cutoff, beads as complex
-```{r}
+#Subset data
 t12 = pmxc[pmxc$Time == "T12",]
 
 t12_6 = t12[t12$Experiment == "PMXC6",]
 
 t12_7 = t12[t12$Experiment == "PMXC7",]
 
-regression6 = ggplot(t12_6, aes(x=ComplexityB, y=hill1)) + 
-  theme_bw()+
-  geom_point(aes(color=Treatment)) + guides(col = guide_legend(nrow = 2)) +ylab("ENS (q=1)")+ geom_smooth(method="glm") +
+
+##Experiment 1 linear regression
+
+fit_linear_7 <- lmer(
+  hill1 ~ ComplexityB + (1 | Treatment),
+  data = t12_7,
+  REML = FALSE
+)
+
+pred_linear_7 <- ggpredict(fit_linear_7, terms = "ComplexityB [all]")
+
+r2_linear_7 <- performance::r2_nakagawa(fit_linear_7)$R2_marginal
+pval_linear_7 <- anova(fit_linear_7)$`Pr(>F)`[1]
+
+regression7 <- ggplot(t12_7, aes(x = ComplexityB, y = hill1)) +
+  geom_point(aes(color = Treatment)) +
+  geom_line(
+    data = pred_linear_7,
+    aes(x = x, y = predicted),
+    linewidth = 1
+  ) +
+  geom_ribbon(
+    data = pred_linear_7,
+    aes(x = x, ymin = conf.low, ymax = conf.high),
+    alpha = 0.2,
+    inherit.aes = FALSE
+  ) +
   coord_cartesian(ylim = c(0, 10)) +
-  theme(axis.title.x = element_text(size = 10, margin = margin(-30)),axis.title.y = element_text(size = 10),
-  legend.position = "none",
-  axis.line = element_line(colour = "black"),
-  panel.grid.major = element_blank(),
-  panel.grid.minor = element_blank(),
-  panel.background = element_blank()
-)  +stat_cor(label.x = 0, label.y = 9.5, size = 4) +scale_color_manual(values = color) + scale_y_continuous(labels = scales::number_format(accuracy = 1))+facet_wrap(~Experiment, ncol=1, labeller = as_labeller(facet_labels)) + xlab("Environmental Complexity")
+  annotate(
+    "text",
+    x = 0.2, y = 9.5,
+    label = paste0(
+      "Marginal R² = ", round(r2_linear_7, 3),
+      "\n p = ", signif(pval_linear_7, 3)
+    ),
+    size = 3
+  ) +
+  facet_wrap(~Experiment, ncol = 1, labeller = as_labeller(facet_labels)) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_text(size = 10, margin = margin(t = -30)),
+    axis.title.y = element_text(size = 10),
+    legend.position = "none",
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank()
+  ) +
+  scale_color_manual(values = color) +
+  labs(x = "Environmental Complexity", y = "ENS (q=1)")
 
-regression7 = ggplot(t12_7, aes(x=ComplexityB, y=hill1)) + 
-  theme_bw()+
-  geom_point(aes(color=Treatment)) + guides(col = guide_legend(nrow = 2)) +ylab("ENS (q=1)")+ geom_smooth(method="glm") +
-  coord_cartesian(ylim = c(0, 10)) + theme(
-  axis.title.x = element_text(size = 10, margin = margin(t = -30)),axis.title.y = element_text(size = 10),
-  legend.position = "none",
-  axis.line = element_line(colour = "black"),
-  panel.grid.major = element_blank(),
-  panel.grid.minor = element_blank(),
-  panel.background = element_blank()
-)  +stat_cor(label.x = 0, label.y = 9.5, size = 4) +scale_color_manual(values = color) + scale_y_continuous(labels = scales::number_format(accuracy = 1))+facet_wrap(~Experiment, ncol=1, labeller = as_labeller(facet_labels)) + xlab("Environmental Complexity")
-```
 
-```{r}
+##Experiment 2 linear regression
 
-library(cowplot)
-library(gridExtra)
+fit_linear_6 <- lmer(
+  hill1 ~ ComplexityB + (1 | Treatment),
+  data = t12_6,
+  REML = FALSE
+)
+
+pred_linear_6 <- ggpredict(fit_linear_6, terms = "ComplexityB [all]")
+
+r2_linear_6 <- performance::r2_nakagawa(fit_linear_6)$R2_marginal
+pval_linear_6 <- anova(fit_linear_6)$`Pr(>F)`[1]
+
+regression6 <- ggplot(t12_6, aes(x = ComplexityB, y = hill1)) +
+  geom_point(aes(color = Treatment)) +
+  geom_line(
+    data = pred_linear_6,
+    aes(x = x, y = predicted),
+    linewidth = 1
+  ) +
+  geom_ribbon(
+    data = pred_linear_6,
+    aes(x = x, ymin = conf.low, ymax = conf.high),
+    alpha = 0.2,
+    inherit.aes = FALSE
+  ) +
+  coord_cartesian(ylim = c(0, 10)) +
+  annotate(
+    "text",
+    x = 0.2, y = 9.5,
+    label = paste0(
+      "Marginal R² = ", round(r2_linear_6, 3),
+      "\n p = ", signif(pval_linear_6, 3)
+    ),
+    size = 3
+  ) +
+  facet_wrap(~Experiment, ncol = 1, labeller = as_labeller(facet_labels)) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_text(size = 10, margin = margin(t = -30)),
+    axis.title.y = element_text(size = 10),
+    legend.position = "none",
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank()
+  ) +
+  scale_color_manual(values = color) +
+  labs(x = "Environmental Complexity", y = "ENS (q=1)")
+
 
 # Specify desired legend order
 t12$Treatment <- factor(t12$Treatment, levels = c("SM9RTNB", "SM9RTB", "SM9VTNB", "SM9VTB", "NSM9RTNB", "NSM9RTB", "NSM9VTNB", "NSM9VTB", "SR2ARTNB", "SR2ARTB", "SR2AVTNB", "SR2AVTB", "NSR2ARTNB", "NSR2ARTB", "NSR2AVTNB", "NSR2AVTB","SCRRTNB", "SCRRTB", "SCRVTNB", "SCRVTB", "NSCRRTNB", "NSCRRTB", "NSCRVTNB", "NSCRVTB"))
@@ -188,15 +265,7 @@ g <- ggplotGrob(legend_plot)
 legend_grob <- g$grobs[which(sapply(g$grobs, function(x) x$name) == "guide-box")][[1]]
 
 
-
-```
-
-
-
-
 #Boxplot of diversity metrics by treatment on T12
-```{r}
-
 hill6 = ggplot(t12_6, aes(x=Treatment, y=hill1)) + 
   theme_bw()+
   geom_boxplot(aes(color=Treatment, reorder(Treatment, hill1))) + theme(legend.position="none", axis.text.x = element_text(angle = 90), axis.title.y = element_text(size = 10), axis.title.x = element_text(size = 10)) +ylab("ENS (q=1)") +scale_color_manual(values = color)+
@@ -214,11 +283,7 @@ hill7 = ggplot(t12_7, aes(x=Treatment, y=hill1)) +
     panel.background = element_blank()) +scale_y_continuous(labels = scales::number_format(accuracy = 1))+ facet_wrap(~Experiment, ncol=1, scales = "free", labeller = as_labeller(facet_labels))
 
 
-```
-
-
 #Arrange plots and save as svg
-```{r}
 combined_plot = ggarrange(regression7, regression6,hill7, hill6,  ncol = 2, nrow=2, align="hv", labels = c("A", "B",  "C", "D"), hjust=0.2, vjust=0.6, font.label = list(size = 15,family="serif")) 
 
 combined_with_padding <- ggdraw() +
@@ -233,11 +298,11 @@ final_plot <- cowplot::plot_grid(
 )
 
 
-#svg("~/Desktop/PMXC_regression_Hill1_T12_icons.svg", height=8, width=12)
+svg("~/Desktop/Figure2_Hill1_T12.svg", height=8, width=12)
 
 final_plot
 
-#dev.off()
+dev.off()
 ```
 #############################################################################################
 
@@ -265,19 +330,57 @@ t12_7$Temp <- factor(t12_7$Temp, levels = c("RT", "VT"))
 t12_7$Shake <- factor(t12_7$Shake, levels = c("S", "NS"))
 t12_7$Beads <- factor(t12_7$Beads, levels = c("NB", "B"))
 
-```
-
 
 #Run GLM on T12 usig Hill1 calculated with 1% abundance cutoff 
-```{r}
-#PMXC6 (CR.R2A)
+
+#PMXC7 (Experiment 1)
+
+#Run GLM model
+glm_pmxc7T12 <- glm(hill1  ~Media*Shake*Temp*Beads, data=t12_7,family = Gamma(link = "log"))
+
+summary(glm_pmxc7T12)
+
+glm_plot7 = plot_model(glm_pmxc7T12,show.values = TRUE, show.p=TRUE, value.offset=0.4,vline="black",transform="exp", type="est")
+
+
+glm_plot7 = glm_plot7 +theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),plot.margin = margin(t = 10, r = 10, b = 10, l = 10, unit = "pt"))+scale_color_manual(values = c("black","black")) + theme(text = element_text(size = 10)) + ggtitle("M9.CR")+
+  coord_flip(clip = "off") + scale_y_log10(limits = c(0.1, 10))
+
+glm_plot_int7 = plot_model(glm_pmxc7T12,show.values = TRUE, show.p=TRUE, value.offset=0.3,vline="black", type="int")
+
+
+glm_int7 <- glm_plot_int7[[11]]
+
+plot_data7 <- glm_int7$data
+
+#Create a new 'Media' column based on x
+plot_data7$Media <- factor(ifelse(plot_data7$x == 1, "M9", "CR"), levels = c("M9", "CR"))
+
+#Create the plot colored by Media
+glm_plot_int7 <- ggplot(plot_data7, aes(x = group, y = predicted, color = Media)) +
+  geom_point(position = position_dodge(width = 0.3), size = 2.5) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2, position = position_dodge(width = 0.3)) +
+  facet_grid(panel ~ facet) +
+  theme_bw() +
+  scale_color_manual(values = c("M9" = "purple", "CR" = "darkgreen")) +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.border = element_rect(color = "black", fill = NA),
+    strip.background = element_rect(fill = "grey90", colour = "black")
+  ) + ylab("ENS (q=1)") +xlab("Shake") + ggtitle("Effect plots for M9.CR")
+
+
+#PMXC6 (Experiment 2)
 
 #Run GLM model
 glm_pmxc6T12 <- glm(hill1  ~ Media*Shake*Temp*Beads, data=t12_6,family = Gamma(link = "log"))
 
 summary(glm_pmxc6T12)
 
-library(sjPlot) 
 
 glm_plot6 = plot_model(glm_pmxc6T12,show.values = TRUE, show.p=TRUE, value.offset=0.4,vline="black",transform="exp", type="est")
 
@@ -310,57 +413,9 @@ glm_plot_int6 <- ggplot(plot_data6, aes(x = group, y = predicted, color = Media)
     panel.border = element_rect(color = "black", fill = NA),
     strip.background = element_rect(fill = "grey90", colour = "black")
   )+ ylab("ENS (q=1)")+xlab("Shake") + ggtitle("Effect plots for R2A.CR")
-```
-
-```{r}
-#PMXC7 (CR.M9)
-
-#Run GLM model
-glm_pmxc7T12 <- glm(hill1  ~Media*Shake*Temp*Beads, data=t12_7,family = Gamma(link = "log"))
-
-summary(glm_pmxc7T12)
-
-library(sjPlot) 
-glm_plot7 = plot_model(glm_pmxc7T12,show.values = TRUE, show.p=TRUE, value.offset=0.4,vline="black",transform="exp", type="est")
 
 
-glm_plot7 = glm_plot7 +theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(),plot.margin = margin(t = 10, r = 10, b = 10, l = 10, unit = "pt"))+scale_color_manual(values = c("black","black")) + theme(text = element_text(size = 10)) + ggtitle("M9.CR")+
-  coord_flip(clip = "off") + scale_y_log10(limits = c(0.1, 10))
-
-glm_plot_int7 = plot_model(glm_pmxc7T12,show.values = TRUE, show.p=TRUE, value.offset=0.3,vline="black", type="int")
-
-
-glm_int7 <- glm_plot_int7[[11]]
-
-plot_data7 <- glm_int7$data
-
-# Step 2: Create a new 'Media' column based on x
-plot_data7$Media <- factor(ifelse(plot_data7$x == 1, "M9", "CR"), levels = c("M9", "CR"))
-
-# Step 3: Create the plot colored by Media
-glm_plot_int7 <- ggplot(plot_data7, aes(x = group, y = predicted, color = Media)) +
-  geom_point(position = position_dodge(width = 0.3), size = 2.5) +
-  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2, position = position_dodge(width = 0.3)) +
-  facet_grid(panel ~ facet) +
-  theme_bw() +
-  scale_color_manual(values = c("M9" = "purple", "CR" = "darkgreen")) +
-  theme(
-    axis.line = element_line(colour = "black"),
-    panel.border = element_rect(color = "black", fill = NA),
-    strip.background = element_rect(fill = "grey90", colour = "black")
-  ) + ylab("ENS (q=1)") +xlab("Shake") + ggtitle("Effect plots for M9.CR")
-
-```
-
-
-```{r}
-library(svglite)
-
-#svglite("~/Desktop/PMXC_GLM_estimates_intPred_T12_min0.01_stacked_v2.svg", height=10, width=12)
+#svglite("~/Desktop/Figure3_GLM_estimates_intPred_T12_min0.01_stacked_v2.svg", height=10, width=12)
 
 layout_matrix <- matrix(c(1,1,1,2, 2, 
                          3,3,3,4,4), 
@@ -376,7 +431,7 @@ grid.arrange(glm_plot7, glm_plot_int7,glm_plot6, glm_plot_int6, layout_matrix= l
 
 #############################################################################################
 
-#Figure 4 - NMDS plot & final community composition
+#Figure 4 - Final community composition
 
 #Calculate bray curtis with relative abundance
 ```{r}
@@ -393,167 +448,9 @@ pmxc6$Treatment <- factor(pmxc6$Treatment, levels = c("R2A", "CR", "SR2ARTNB", "
 pmxc7 = pmxc[pmxc$Experiment == "PMXC7",]
 
 pmxc7$Treatment <- factor(pmxc7$Treatment, levels = c("M9", "CR", "SM9RTNB", "SM9RTB", "SM9VTNB", "SM9VTB","NSM9RTNB", "NSM9RTB", "NSM9VTNB", "NSM9VTB", "SCRRTNB", "SCRRTB", "SCRVTNB", "SCRVTB","NSCRRTNB", "NSCRRTB", "NSCRVTNB", "NSCRVTB"))
-```
-
-```{r}
-#Subset ASV abundances and save as matrix
-abund_table6 <- as.matrix(pmxc6[,2:29])
-abund_table7 <- as.matrix(pmxc7[,2:29])
-
-#Subset metadata and save as matrix
-meta_table6 <- pmxc6[,30:43]
-meta_table7 <- pmxc7[,30:43]
-
-#Calculate Bray-Curtis dissimilarity
-nmds6 = metaMDS(abund_table6, distance = "bray")
-nmds7 = metaMDS(abund_table7, distance = "bray")
-```
-
-#Organize NMDS scores in data frame with metadata
-```{r}
-
-data.scores6 = as.data.frame(scores(nmds6)$sites)
-
-#add columns to data frame 
-data.scores6$Sample = meta_table6$Sample
-data.scores6$Time = meta_table6$Time
-data.scores6$Media = meta_table6$Media
-data.scores6$Treatment = meta_table6$Treatment
-data.scores6$Beads = meta_table6$Beads
-data.scores6$Shake = meta_table6$Shake
-data.scores6$Temp = meta_table6$Temp
-data.scores6$Rep = meta_table6$Rep
-data.scores6$Day = meta_table6$Day
-
-head(data.scores6)
-
-data.scores7 = as.data.frame(scores(nmds7)$sites)
-
-#add columns to data frame 
-data.scores7$Sample = meta_table7$Sample
-data.scores7$Time = meta_table7$Time
-data.scores7$Media = meta_table7$Media
-data.scores7$Treatment = meta_table7$Treatment
-data.scores7$Beads = meta_table7$Beads
-data.scores7$Shake = meta_table7$Shake
-data.scores7$Temp = meta_table7$Temp
-data.scores7$Rep = meta_table7$Rep
-data.scores7$Day = meta_table7$Day
-
-head(data.scores7)
-
-```
-
-
-#NMDS showing only centroids for OG, T0, T12
-```{r}
-og_6 = subset(data.scores6, Time == "OG")
-t0_6= subset(data.scores6, Time == "T0")
-t12_6= subset(data.scores6, Time == "T12")
-
-scores6=rbind(og_6,t0_6,t12_6)
-
-og_7 = subset(data.scores7, Time == "OG")
-t0_7= subset(data.scores7, Time == "T0")
-t12_7= subset(data.scores7, Time == "T12")
-
-scores7=rbind(og_7,t0_7,t12_7)
-
-```
-
-```{r}
-#data.scores = na.omit(data.scores)
-centroids6 <- aggregate(cbind(NMDS1, NMDS2) ~ Treatment + Day, 
-                       data = scores6, 
-                       FUN = mean)
-centroidOG_6 = og_6
-centroid1_6 = centroids6[centroids6$Day=="3",]
-centroid2_6 = centroids6[centroids6$Day=="39",]
-
-# Step 7: Plot the NMDS with centroids
-
-scores6$Day = as.factor(scores6$Day)
-
-nmdsplot6 = ggplot(scores6, aes(x = NMDS1, y = NMDS2), color = Treatment) +
-  geom_point(alpha = 0.2, aes(color = Treatment, shape=Day), size=4) +  # Show individual points
-  geom_point(data = centroid1_6, aes(x = NMDS1, y = NMDS2, color = Treatment, shape=Day), size = 8) +
-  geom_point(data = centroid2_6, aes(x = NMDS1, y = NMDS2, color = Treatment, shape=Day), size = 8)+
-  geom_point(data = centroidOG_6, aes(x = NMDS1, y = NMDS2, color = Treatment, shape=Day), size = 8)+ scale_shape_manual(values=c(8,19,17))+
-  theme_minimal() +scale_color_manual(values = color) + theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(), legend.position="none", legend.box="vertical", legend.margin=margin(),legend.title = element_text(angle = 90, vjust=1), plot.margin = margin(t = 20, r = 20, b = 20, l = 20, unit = "pt"), axis.text=element_text(size=15), axis.title.y = element_text(size = 15), axis.title.x = element_text(size = 15)) + ggtitle("R2A.CR")+ annotate("text", x = Inf, y = -Inf, label = sprintf("Stress = %.2f", nmds6$stress),
-           hjust = 1.1, vjust = -0.5, size = 6)
-
-#data.scores = na.omit(data.scores)
-centroids_7 <- aggregate(cbind(NMDS1, NMDS2) ~ Treatment + Day, 
-                       data = scores7, 
-                       FUN = mean)
-centroidOG_7 = og_7
-centroid1_7 = centroids_7[centroids_7$Day=="3",]
-centroid2_7 = centroids_7[centroids_7$Day=="39",]
-
-# Step 7: Plot the NMDS with centroids
-scores7$Day = as.factor(scores7$Day)
-
-
-
-nmdsplot7 = ggplot(scores7, aes(x = NMDS1, y = NMDS2), color = Treatment) +
-  geom_point(alpha = 0.2, aes(color = Treatment, shape=Day), size=4) +  # Show individual points
-  geom_point(data = centroid1_7, aes(x = NMDS1, y = NMDS2, color = Treatment, shape=Day), size = 8) +
-  geom_point(data = centroid2_7, aes(x = NMDS1, y = NMDS2, color = Treatment, shape=Day), size = 8)+
-  geom_point(data = centroidOG_7, aes(x = NMDS1, y = NMDS2, color = Treatment, shape=Day), size = 8)+ scale_shape_manual(values=c(8,19,17))+
-  theme_minimal() +scale_color_manual(values = color) + theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(), legend.position="none", legend.box="vertical", legend.margin=margin(),legend.title = element_text(angle = 90, vjust=1), plot.margin = margin(t = 20, r = 20, b = 20, l = 20, unit = "pt"), axis.text=element_text(size=15), axis.title.y = element_text(size = 15), axis.title.x = element_text(size = 15)) + ggtitle("M9.CR") + annotate("text", x = Inf, y = -Inf, label = sprintf("Stress = %.2f", nmds7$stress),
-           hjust = 1.1, vjust = -0.5, size = 6)
-
-```
-
-
-
-```{r}
-#Make nmds plot with both pmxc6 and pmxc7 and extract legend
-
-scores = rbind(scores6, scores7)
-
-scores$Day = factor(scores$Day, levels = c("0", "3", "39"))
-
-
-scores$Treatment = factor(scores$Treatment, levels = c("SR2ARTNB", "SR2ARTB", "SR2AVTNB", "SR2AVTB","NSR2ARTNB", "NSR2ARTB", "NSR2AVTNB", "NSR2AVTB", "SM9RTNB", "SM9RTB", "SM9VTNB", "SM9VTB","NSM9RTNB", "NSM9RTB", "NSM9VTNB", "NSM9VTB",  "SCRRTNB", "SCRRTB", "SCRVTNB", "SCRVTB","NSCRRTNB", "NSCRRTB", "NSCRVTNB", "NSCRVTB", "CR", "R2A", "M9"))
-
-
-
-# Build the plot
-nmds_legend_plot <- ggplot(scores, aes(x = NMDS1, y = NMDS2), color = Treatment) +
-  geom_point(aes(color = Treatment, shape=Day), size=8) +  # Show individual point
-  theme_minimal() +scale_color_manual(values = color)  +  
-  theme(
-    legend.position = "right",
-    legend.box.margin = margin(0, 0, 0, 0),  # Reduce margin around the entire legend box
-    legend.spacing.y = unit(0.5, "pt"),  # Reduce vertical space between legend items
-    legend.spacing.x = unit(1, "pt"),  # Reduce horizontal space between legend items
-    legend.key.size = unit(2.5, "lines"),  # Reduce size of legend keys
-    legend.title.align = 0.5,
-    legend.text = element_text(size = 15),        # <- Increase legend text size
-    legend.title = element_text(size = 15)
-  )+ scale_shape_manual(values=c(8,19,17))
-
-
-# Convert to grob
-g <- ggplotGrob(nmds_legend_plot)
-
-# Extract legend manually
-nmds_legend <- g$grobs[which(sapply(g$grobs, function(x) x$name) == "guide-box")][[1]]
-
-```
 
 
 #Barplot final samples 
-```{r}
 t12_6=pmxc6[pmxc6$Time=="T12",]
 t12_7=pmxc7[pmxc7$Time=="T12",]
 
@@ -591,10 +488,10 @@ comp7 = ggplot(data = long7, aes(fill=Isolate, y=value, x=Rep)) +
     geom_bar(position="fill", stat="identity") +
    scale_fill_manual(values = col28) + theme(strip.text = element_text(
     size =10)) +theme(axis.text=element_text(size=15), legend.text = element_text(size=15),legend.key.size = unit(5, 'mm'), axis.text.x = element_text(angle = 90),  axis.title.x=element_blank(), plot.margin = margin(t = 20, r = 20, b = 20, l = 20, unit = "pt"), axis.title.y = element_text(size = 15))+ ylab("Relative Abundance") + guides(fill=guide_legend(ncol =1)) + facet_wrap(~Treatment)+ theme(legend.position="none", strip.text = element_text(size = 15)) + ggtitle("M9.CR")
-```
+
 
 #Extract legend for barplot
-```{r}
+
 comp_legend_plot = ggplot(data = long6, aes(fill=Isolate, y=value, x=Rep)) +    
   theme_bw()+        
     geom_bar(position="fill", stat="identity") +
@@ -617,12 +514,8 @@ g <- ggplotGrob(comp_legend_plot)
 
 # Extract legend manually
 comp_legend <- g$grobs[which(sapply(g$grobs, function(x) x$name) == "guide-box")][[1]]
-```
 
-
-
-```{r}
-#svg("~/Desktop/PMXC6_PMXC7_T12composition_nmds_v2.svg", width=25, height=20)
+#svg("~/Desktop/Figure4_T12composition_nmds_v2.svg", width=25, height=20)
 ggarrange(nmdsplot7, nmdsplot6, nmds_legend, comp7, comp6, comp_legend, align = "hv")
 #dev.off()
 ```
@@ -630,12 +523,6 @@ ggarrange(nmdsplot7, nmdsplot6, nmds_legend, comp7, comp6, comp_legend, align = 
 #############################################################################################
 
 #Figure 5 - ANCOMBC dot plot
-
-```{r}
-library(phyloseq)
-library(ANCOMBC)
-```
-
 
 ```{r}
 data6 = read.csv("~/Desktop/PMXC6_ASVtable_rawCounts_notRare_summedASVs_metadata.csv", header=T)
@@ -689,9 +576,7 @@ output6 = ancombc2(data = physeq6, assay_name = "counts", tax_level = NULL,
 
 output6_res <- output6$res
 dim(output6_res)
-```
 
-```{r}
 #Ensuring all ASVs are included on y-axis
 full_asv_list <- data.frame(taxon = taxa_names(physeq6))
 
@@ -702,7 +587,6 @@ full_res6 <- full_res6 %>%
   mutate(across(starts_with("diff_"), ~replace_na(., FALSE))) %>%
   mutate(across(starts_with("lfc_"), ~replace_na(., NA_real_)))
 
-library(tidyverse)
 
 # Step 1: Prepare LFC, SE, significance
 lfc_df <- full_res6 %>%
@@ -729,19 +613,6 @@ plot_df6$taxon <- factor(plot_df6$taxon, levels = unique(plot_df6$taxon))
 plot_df6$term <- factor(plot_df6$term, levels = unique(plot_df6$term))
 
 
-
-```
-
-
-
-
-
-
-
-
-
-
-```{r}
 data7 = read.csv("~/Desktop/PMXC7_ASVtable_rawCounts_notRare_summedASVs_metadata.csv", header=T)
 
 data7 = data7[data7$Time == "T12",]
@@ -791,9 +662,7 @@ output7 = ancombc2(data = physeq7, assay_name = "counts", tax_level = NULL,
 
 output7_res <- output7$res
 dim(output7_res)
-```
 
-```{r}
 #Ensuring all ASVs are included on y-axis
 full_asv_list <- data.frame(taxon = taxa_names(physeq6))
 
@@ -803,8 +672,6 @@ full_res7 <- full_asv_list %>%
 full_res7 <- full_res7 %>%
   mutate(across(starts_with("diff_"), ~replace_na(., FALSE))) %>%
   mutate(across(starts_with("lfc_"), ~replace_na(., NA_real_)))
-
-library(tidyverse)
 
 # Step 1: Prepare LFC, SE, significance
 lfc_df <- full_res7 %>%
@@ -830,13 +697,6 @@ plot_df7 <- lfc_df %>%
 plot_df7$taxon <- factor(plot_df7$taxon, levels = unique(plot_df7$taxon))
 plot_df7$term <- factor(plot_df7$term, levels = unique(plot_df7$term))
 
-
-```
-
-```{r}
-
-library(phyloseq)
-library(tidyverse)
 
 # Step 1: Convert to relative abundance
 physeq_rel6 <- transform_sample_counts(physeq6, function(x) x / sum(x))
@@ -867,11 +727,8 @@ avg_abund_df7 <- rowMeans(otu_mat7, na.rm = TRUE) %>%
   arrange(desc(mean_relative_abundance))
 
 
-```
-
-```{r}
-plot_df6$Experiment <- "R2A.CR"
-plot_df7$Experiment <- "M9.CR"
+plot_df6$Experiment <- "Experiment 2"
+plot_df7$Experiment <- "Experiment 1"
 
 plot_df6 <- plot_df6 %>%
   left_join(avg_abund_df6, by = "taxon")
@@ -886,12 +743,6 @@ plot_df7 <- plot_df7[!plot_df7$taxon %in% c("Unassigned", "Unassigne"), ]
 
 ancombc_67 = rbind(plot_df6,plot_df7)
 
-```
-
-
-```{r}
-
-library(svglite)
 
 # Step 1: Define global taxon order (sorted or manual)
 ancombc_67 <- ancombc_67 %>%
@@ -922,15 +773,12 @@ term_labels <- c(
   "ShakeNS × TempVT × BeadsB" = "NS*VT*B",
   "MediaCR × ShakeNS × TempVT × BeadsB" = "CR*NS*VT*B"
 )
-```
-
-
 
 
 #Dot plot of ANCOMBC results where color = LFC and size = average relative abundance of each ASV at T12 in their respective experiments
-```{r}
 
-#svglite("~/Desktop/PMXC_ANCOMBC_dotPlot_sizeRelAbun.svg", width=8, height=6)
+
+#svglite("~/Desktop/Figure5_ANCOMBC_dotPlot_sizeRelAbun.svg", width=8, height=6)
 
 ancom_plot = ggplot(ancombc_67, aes(x = term, y = taxon)) +
   # Background layer: all points (invisible, just to keep layout)
@@ -980,13 +828,11 @@ ancom_plot = ggplot(ancombc_67, aes(x = term, y = taxon)) +
 #dev.off()
 
 
-
 ```
+
 
 #Heatmap of relevant chitin genes
 ```{r}
-
-library(dplyr)
 
 chi <- read.csv("~/Desktop/PMXC_chitin_hits_summary.csv", header = TRUE)
 
@@ -1012,10 +858,6 @@ ordered_asvs <- c("S9", "S33", "S8", "S120", "S14",
 
 chi$ASV <- factor(chi$ASV, levels = rev(ordered_asvs))
 
-```
-
-```{r}
-library(svglite)
 
 #Specify type order
 ordered_type <- c("Chitinase","Chitin Deacetylase", "Alpha-N-acetylglucosaminidase", "Beta-N-acetylglucosaminidase", "N-acetylglucosamine-6-phosphate deacetylase") 
@@ -1042,10 +884,9 @@ chit_plot = ggplot(chi, aes(x = Gene, y = ASV, fill = Count)) +
     panel.border = element_rect(color = "black", fill = NA, size = 0.5)  # black outline of plot
   ) +
   labs(fill = "Count") 
-```
 
 #Save chitin plot as svg
-```{r}
+
 #svglite("~/Desktop/PMXC_genome_chitin_heatmap.svg", height=10,width=6)
 chit_plot
 #dev.off()
@@ -1082,9 +923,6 @@ otu_sub <- otu_sub[, c("Treatment", "ASV17", "ASV2")]
 
 #Abundance boxplot
 ```{r}
-
-library(ggplot2)
-library(reshape2)  # or tidyr::pivot_longer
 
 # Convert to long format (ASV + abundance in one column)
 otu_long <- reshape2::melt(otu_sub, id.vars = "Treatment", 
@@ -1154,13 +992,236 @@ ggplot(otu_long, aes(x = ASV, y = Abundance, fill = ASV)) +
 
 ```
 
+#Testing PERMANOVA, ANOSIM and SIMPER to compare to ANCOMBC2
+#Calculate bray curtis with relative abundance
+```{r}
+pmxc = read.csv("~/Desktop/PMXC6_7_combined_ASVtable.csv", header=T)
+
+#Subset by experiment and set treatment order for barplots
+
+pmxc$Day = as.factor(pmxc$Day)
+
+pmxc = pmxc[pmxc$Day == 39,]
+
+pmxc6 = pmxc[pmxc$Experiment == "PMXC6",]
+
+pmxc6$Treatment <- factor(pmxc6$Treatment, levels = c("R2A", "CR", "SR2ARTNB", "SR2ARTB", "SR2AVTNB", "SR2AVTB","NSR2ARTNB", "NSR2ARTB", "NSR2AVTNB", "NSR2AVTB", "SCRRTNB", "SCRRTB", "SCRVTNB", "SCRVTB","NSCRRTNB", "NSCRRTB", "NSCRVTNB", "NSCRVTB"))
+
+pmxc7 = pmxc[pmxc$Experiment == "PMXC7",]
+
+pmxc7$Treatment <- factor(pmxc7$Treatment, levels = c("M9", "CR", "SM9RTNB", "SM9RTB", "SM9VTNB", "SM9VTB","NSM9RTNB", "NSM9RTB", "NSM9VTNB", "NSM9VTB", "SCRRTNB", "SCRRTB", "SCRVTNB", "SCRVTB","NSCRRTNB", "NSCRRTB", "NSCRVTNB", "NSCRVTB"))
+```
+
+```{r}
+#Subset ASV abundances and save as matrix
+abund_table6 <- as.matrix(pmxc6[,2:29])
+abund_table7 <- as.matrix(pmxc7[,2:29])
+
+#Subset metadata and save as matrix
+meta_table6 <- pmxc6[,30:43]
+meta_table7 <- pmxc7[,30:43]
+
+#Calculate Bray-Curtis dissimilarity
+dist_mat6 = vegdist(abund_table6, method = "bray")
+dist_mat7 = vegdist(abund_table7, method = "bray")
+```
+
+#PERMANOVA
+```{r}
+permanova6 <- adonis2(dist_mat6 ~ Treatment,
+                     data = meta_table6,
+                     permutations = 999)
+
+
+
+permanova7 <- adonis2(dist_mat7 ~ Treatment,
+                     data = meta_table7,
+                     permutations = 999)
+
+disp6 <- betadisper(dist_mat6, meta_table6$Treatment)
+anova(disp6)
+
+disp7 <- betadisper(dist_mat7, meta_table7$Treatment)
+anova(disp7)
+
+print(permanova6)
+print(permanova7)
+```
+#ANOSIM
+```{r}
+
+anosim_res6 <- anosim(dist_mat6, meta_table6$Treatment)
+summary(anosim_res6)
+
+anosim_res7 <- anosim(dist_mat7, meta_table7$Treatment)
+summary(anosim_res7)
+
+```
+#SIMPER
+```{r}
+
+simper_res6 <- simper(dist_mat6, meta_table6$Treatment)
+
+summary(simper_res6)
+
+simper_res7 <- simper(dist_mat7, meta_table7$Treatment)
+
+summary(simper_res7)
+
+```
+
+
+#PCOA plot
+```{r}
+
+library(vegan)
+library(ggplot2)
+library(patchwork)
+
+# PCoA (Experiment 6)
+pcoa6 <- cmdscale(dist_mat6, eig = TRUE, k = 2)
+pcoa_df6 <- as.data.frame(pcoa6$points)
+colnames(pcoa_df6) <- c("PC1", "PC2")
+pcoa_df6$Treatment <- meta_table6$Treatment
+
+plot6 <- ggplot(pcoa_df6, aes(PC1, PC2, color = Treatment)) +
+  geom_point(size = 2) +
+  stat_ellipse() +
+  scale_color_manual(values=color)+
+  theme_bw() +
+  labs(title = "PMXC6", x = "PCoA1", y = "PCoA2")
+
+# PCoA (Experiment 7)
+pcoa7 <- cmdscale(dist_mat7, eig = TRUE, k = 2)
+pcoa_df7 <- as.data.frame(pcoa7$points)
+colnames(pcoa_df7) <- c("PC1", "PC2")
+pcoa_df7$Treatment <- meta_table7$Treatment
+
+plot7 <- ggplot(pcoa_df7, aes(PC1, PC2, color = Treatment)) +
+  geom_point(size = 2) +
+  stat_ellipse() +
+  scale_color_manual(values=color)+
+  theme_bw() +
+  labs(title = "PMXC7", x = "PCoA1", y = "PCoA2")
+
+plot6 / plot7
+
+```
+
+#Dispersion plot
+```{r}
+
+disp_df6 <- data.frame(
+  distance = disp6$distances,
+  Treatment = meta_table6$Treatment
+)
+
+disp_df7 <- data.frame(
+  distance = disp7$distances,
+  Treatment = meta_table7$Treatment
+)
+
+dplot6 <- ggplot(disp_df6, aes(Treatment, distance)) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "Experiment 2 Dispersion", y = "Distance to centroid")
+
+dplot7 <- ggplot(disp_df7, aes(Treatment, distance)) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "Experiment 1 Dispersion", y = "Distance to centroid")
+
+dplot7 / dplot6
+```
+
+
+#Summary stats table
+```{r}
+
+library(broom)
+
+# PERMANOVA tidy
+perm6_tab <- broom::tidy(permanova6) %>%
+  mutate(Experiment = "PMXC6")
+
+perm7_tab <- broom::tidy(permanova7) %>%
+  mutate(Experiment = "PMXC7")
+
+permanova_table <- bind_rows(perm6_tab, perm7_tab)
+
+# Dispersion results
+disp_table <- tibble(
+  Experiment = c("PMXC6", "PMXC7"),
+  F_value = c(
+    anova(disp6)$`F value`[1],
+    anova(disp7)$`F value`[1]
+  ),
+  p_value = c(
+    anova(disp6)$`Pr(>F)`[1],
+    anova(disp7)$`Pr(>F)`[1]
+  )
+)
+
+# ANOSIM results
+anosim_table <- tibble(
+  Experiment = c("PMXC6", "PMXC7"),
+  R_stat = c(anosim_res6$statistic, anosim_res7$statistic),
+  p_value = c(anosim_res6$signif, anosim_res7$signif)
+)
+
+permanova_table
+disp_table
+anosim_table
+```
+
+
+#between vs within treatment variance
+```{r}
+
+d6 <- as.matrix(dist_mat6)
+d7 <- as.matrix(dist_mat7)
+
+# PMXC6
+same6 <- outer(meta_table6$Treatment, meta_table6$Treatment, "==")
+diag(same6) <- NA
+
+within6 <- d6[same6]
+between6 <- d6[!same6]
+
+# PMXC7
+same7 <- outer(meta_table7$Treatment, meta_table7$Treatment, "==")
+diag(same7) <- NA
+
+within7 <- d7[same7]
+between7 <- d7[!same7]
+
+mean(within6, na.rm = TRUE)
+mean(between6, na.rm = TRUE)
+
+mean(within7, na.rm = TRUE)
+mean(between7, na.rm = TRUE)
+
+wilcox.test(within6, between6)
+wilcox.test(within7, between7)
+
+library(tidyverse)
+
+df6 <- tibble(
+  value = c(within6, between6),
+  type = c(rep("Within", length(within6)),
+           rep("Between", length(between6)))
+)
+
+ggplot(df6, aes(type, value)) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "PMXC6", y = "Bray-Curtis dissimilarity")
+
+```
+
 
 ```{r}
 
 sessionInfo()
 
 ```
-
-
-
-
