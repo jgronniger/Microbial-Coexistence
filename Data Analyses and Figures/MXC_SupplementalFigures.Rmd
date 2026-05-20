@@ -109,7 +109,7 @@ color <- c("SM9RTNB" = "#FFC1E3",
 
 #Read in growth rate data for isolates (See MXC_Isolate_GrowthCurves for raw data and calculations)
 
-gr = read.csv("~/Desktop/MXC_Isolate_Growth_Curves/MXC_Isolate_GrowthMetrics_R2A_M9_SF1.csv", header=T)
+gr = read.csv("~/Desktop/MXC_Isolate_Growth_Curves/MXC_Isolate_GrowthMetrics_perMedia.csv", header=T)
 
 #Set strain order to match phylogeny 
 
@@ -126,24 +126,27 @@ ggplot(gr, aes(x = Isolate, y = r)) +
   theme(
     legend.position = "none",
     axis.title.y = element_text(size = 10),
-    axis.text = element_text(color = "black"),  # black tick labels
+    axis.text = element_text(color = "black"),
     axis.line = element_line(colour = "black"),
-    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), 
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
     panel.grid.major = element_line(color = "gray90"),
     panel.grid.minor = element_line(color = "gray95"),
     panel.background = element_blank()
   ) +
-  ylab("Growth rate (r)") +
+  ylab("Growth Rate (r)") +
   xlab("Isolate") +
   scale_color_manual(values = col28) +
-  facet_wrap(
-  ~Media,
-  ncol = 1,
-  labeller = as_labeller(c(
-    R2A = "R2A",
-    M9 = "M9 + Glucose"
-  ))
-)
+  facet_wrap2(
+    ~Media,
+    ncol = 1,
+    axes = "all",
+    remove_labels = "none",
+    labeller = as_labeller(c(
+      M9ng = "M9 + CAA",
+      M9wg = "M9 + CAA + Glucose",
+      R2A = "R2A"
+    ))
+  )
 
 
 #Save plot
